@@ -21,6 +21,7 @@ import Summary from "../components/Summary";
 import RecordsList from "../components/RecordsList";
 import ImportantNotice from "../components/ImportantNotice";
 import ContributionGraph from "../components/ContributionGraph";
+import Loading from "../components/Loading";
 
 interface ContributionItem {
   id: string;
@@ -32,8 +33,9 @@ interface ContributionItem {
 }
 
 export default function HomePage() {
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
   const [items, setItems] = useState<ContributionItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
   const [amount, setAmount] = useState(1000);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [type, setType] = useState<"contribution" | "withdrawal">("contribution");
@@ -46,21 +48,31 @@ export default function HomePage() {
       where("uid", "==", user.uid),
       orderBy("date", "desc")
     );
-    return onSnapshot(q, (snapshot) => {
+    setItemsLoading(true);
+    const unsub = onSnapshot(q, (snapshot) => {
       setItems(
         snapshot.docs.map((d) => {
-          const data = d.data() as any;
+          const data = d.data() as unknown;
+          const {
+            uid = "",
+            type = "contribution",
+            amount = 0,
+            date = "",
+            createdAt = 0,
+          } = data as Partial<ContributionItem>;
           return {
             id: d.id,
-            uid: data.uid ?? "",
-            type: (data.type as "contribution" | "withdrawal") ?? "contribution",
-            amount: Number(data.amount) ?? 0,
-            date: data.date ?? "",
-            createdAt: data.createdAt ?? 0,
+            uid,
+            type: type as "contribution" | "withdrawal",
+            amount: Number(amount),
+            date,
+            createdAt,
           };
         })
       );
+      setItemsLoading(false);
     });
+    return () => unsub();
   }, [user]);
 
   async function addItem(e: React.FormEvent) {
@@ -80,12 +92,20 @@ export default function HomePage() {
     await deleteDoc(doc(db, "contributions", id));
   }
 
+  if (authLoading) {
+    return <Loading />;
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--ws-bg)] text-[var(--ws-text)]">
         <AuthButtons user={null} />
       </div>
     );
+  }
+
+  if (itemsLoading) {
+    return <Loading />;
   }
 
   return (
