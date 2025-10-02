@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ws-bg: #f6f7f6;
+  --ws-card: #ffffff;
+  --ws-border: #e6e7e6;
+  --ws-muted: #6b7280; /* gray-500 */
+  --ws-accent: #10b981; /* emerald-500 */
+  --ws-accent-600: #059669; /* emerald-600 */
+  --ws-text: #0b0f0e;
+  /* extras for charts and subtle UI */
+  --ws-grid: #e5e7eb; /* gray-200 */
+  --ws-axis: #6b7280; /* gray-500 */
+  --ws-tooltip-bg: #ffffff;
+  --ws-tooltip-border: #e5e7eb;
+  --ws-hover: #f8fafc; /* slate-50 */
+  --ws-muted-card: #f1f5f9; /* slate-100 */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+/* Smooth number alignment for large figures */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ws-bg: #0f1113;
+    --ws-card: #14181b;
+    --ws-border: #22262b;
+    --ws-muted: #9aa1a6;
+    --ws-accent: #10b981; /* keep brand accent */
+    --ws-accent-600: #34d399;
+    --ws-text: #e6e8ea;
+    --ws-grid: #2b3137;
+    --ws-axis: #9aa1a6;
+    --ws-tooltip-bg: #0f1113;
+    --ws-tooltip-border: #2b3137;
+    --ws-hover: #1a1f24;
+    --ws-muted-card: #1a1f24;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hint to the browser for form controls, scrollbars, etc. */
+html {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
 }
