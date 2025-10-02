@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
 
 export type UISound = "add" | "remove";
 
@@ -14,8 +20,15 @@ export function useSound() {
   return useContext(SoundContext);
 }
 
-export default function SoundProvider({ children }: { children: React.ReactNode }) {
-  const soundsRef = useRef<Record<UISound, HTMLAudioElement | null>>({ add: null, remove: null });
+export default function SoundProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const soundsRef = useRef<Record<UISound, HTMLAudioElement | null>>({
+    add: null,
+    remove: null,
+  });
 
   useEffect(() => {
     // Preload sounds from public/sounds
@@ -45,5 +58,7 @@ export default function SoundProvider({ children }: { children: React.ReactNode 
     } catch {}
   }, []);
 
-  return <SoundContext.Provider value={{ play }}>{children}</SoundContext.Provider>;
+  return (
+    <SoundContext.Provider value={{ play }}>{children}</SoundContext.Provider>
+  );
 }

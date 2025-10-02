@@ -42,7 +42,9 @@ export default function HomePage() {
   const [itemsLoading, setItemsLoading] = useState(true);
   const [amount, setAmount] = useState(1000);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [type, setType] = useState<"contribution" | "withdrawal">("contribution");
+  const [type, setType] = useState<"contribution" | "withdrawal">(
+    "contribution",
+  );
   const [birthYear, setBirthYear] = useState(1990);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function HomePage() {
     const q = query(
       collection(db, "contributions"),
       where("uid", "==", user.uid),
-      orderBy("date", "desc")
+      orderBy("date", "desc"),
     );
     setItemsLoading(true);
     const unsub = onSnapshot(q, (snapshot) => {
@@ -72,7 +74,7 @@ export default function HomePage() {
             date,
             createdAt,
           };
-        })
+        }),
       );
       setItemsLoading(false);
     });
@@ -90,21 +92,37 @@ export default function HomePage() {
         type,
         createdAt: Date.now(),
       });
-  setAmount(1000);
-  play("add");
-      toast({ variant: "success", title: "Saved", description: "Record added." });
-    } catch (err) {
-      toast({ variant: "error", title: "Error", description: "Could not add record." });
+      setAmount(1000);
+      play("add");
+      toast({
+        variant: "success",
+        title: "Saved",
+        description: "Record added.",
+      });
+    } catch {
+      toast({
+        variant: "error",
+        title: "Error",
+        description: "Could not add record.",
+      });
     }
   }
 
   async function removeItem(id: string) {
     try {
-  await deleteDoc(doc(db, "contributions", id));
-  play("remove");
-      toast({ variant: "success", title: "Removed", description: "Record deleted." });
-    } catch (err) {
-      toast({ variant: "error", title: "Error", description: "Could not delete record." });
+      await deleteDoc(doc(db, "contributions", id));
+      play("remove");
+      toast({
+        variant: "success",
+        title: "Removed",
+        description: "Record deleted.",
+      });
+    } catch {
+      toast({
+        variant: "error",
+        title: "Error",
+        description: "Could not delete record.",
+      });
     }
   }
 
@@ -128,18 +146,26 @@ export default function HomePage() {
     <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         <header className="flex items-center justify-between py-2 sm:py-3">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Contribs</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+            Contribs
+          </h1>
           <AuthButtons user={user} />
         </header>
         <section className="grid gap-3 sm:gap-4">
-          <BirthYearInput user={user} birthYear={birthYear} setBirthYear={setBirthYear} />
+          <BirthYearInput
+            user={user}
+            birthYear={birthYear}
+            setBirthYear={setBirthYear}
+          />
           <ContributionForm
             amount={amount}
             setAmount={setAmount}
             date={date}
             setDate={setDate}
             type={type}
-            setType={(val: string) => setType(val as "contribution" | "withdrawal")}
+            setType={(val: string) =>
+              setType(val as "contribution" | "withdrawal")
+            }
             addItem={addItem}
           />
           <Summary items={items} birthYear={birthYear} />

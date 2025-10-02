@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export type ToastVariant = "success" | "error" | "info";
 
@@ -30,7 +37,11 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-export default function ToastProvider({ children }: { children: React.ReactNode }) {
+export default function ToastProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timers = useRef<Record<string, number>>({});
 
@@ -43,18 +54,21 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
-  const toast = useCallback((opts: ToastOptions) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const item: ToastItem = {
-      id,
-      title: opts.title,
-      description: opts.description,
-      variant: opts.variant ?? "info",
-      durationMs: opts.durationMs ?? 3000,
-    };
-    setToasts((prev) => [...prev, item]);
-    timers.current[id] = window.setTimeout(() => remove(id), item.durationMs);
-  }, [remove]);
+  const toast = useCallback(
+    (opts: ToastOptions) => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const item: ToastItem = {
+        id,
+        title: opts.title,
+        description: opts.description,
+        variant: opts.variant ?? "info",
+        durationMs: opts.durationMs ?? 3000,
+      };
+      setToasts((prev) => [...prev, item]);
+      timers.current[id] = window.setTimeout(() => remove(id), item.durationMs);
+    },
+    [remove],
+  );
 
   const value = useMemo(() => ({ toast }), [toast]);
 
@@ -74,11 +88,15 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
               t.variant === "success" && "border-l-4 border-l-emerald-500",
               t.variant === "error" && "border-l-4 border-l-rose-500",
               t.variant === "info" && "border-l-4 border-l-sky-500",
-            ].filter(Boolean).join(" ")}
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
             {t.title && <div className="text-sm font-medium">{t.title}</div>}
             {t.description && (
-              <div className="text-xs text-[var(--ws-muted)] mt-0.5">{t.description}</div>
+              <div className="text-xs text-[var(--ws-muted)] mt-0.5">
+                {t.description}
+              </div>
             )}
             <button
               className="absolute top-1 right-2 text-xs text-[var(--ws-muted)] hover:text-[var(--ws-text)]"

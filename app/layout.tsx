@@ -12,11 +12,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="bg-[var(--ws-bg)] text-[var(--ws-text)]">
-          <SoundProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </SoundProvider>
+        <SoundProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </SoundProvider>
       </body>
     </html>
   );

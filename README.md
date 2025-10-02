@@ -29,6 +29,7 @@ npm install
 ```
 
 2. Create a Firebase project and enable Google authentication
+
 - Go to Firebase Console → Build → Authentication → Sign-in method → Enable Google
 - Create a Firestore database in production or test mode
 
@@ -56,6 +57,7 @@ Visit http://localhost:3000.
 ## Data model
 
 Collection: `contributions`
+
 - `uid`: string (user id)
 - `type`: "contribution" | "withdrawal"
 - `amount`: number
@@ -63,6 +65,7 @@ Collection: `contributions`
 - `createdAt`: number (ms)
 
 Collection: `users`
+
 - `birthYear`: number
 
 ## How TFSA room is calculated here

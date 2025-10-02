@@ -162,9 +162,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
               className="flex justify-between text-[var(--ws-text)]"
             >
               <span>{year}</span>
-              <span>
-                {formatCurrency(summary.byYear[year].contributions)}
-              </span>
+              <span>{formatCurrency(summary.byYear[year].contributions)}</span>
             </div>
           ))}
         </div>
