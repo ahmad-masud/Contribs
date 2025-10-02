@@ -15,6 +15,12 @@ export default function AuthButtons({ user }: { user: User | null }) {
         <span className="text-sm text-[var(--ws-muted)]">
           Hi, {user.displayName || user.email}
         </span>
+        <a
+          href="/account"
+          className="px-3 py-1.5 rounded-md border border-[var(--ws-border)] text-[var(--ws-text)] hover:bg-[var(--ws-hover)] transition cursor-pointer"
+        >
+          Account
+        </a>
         <button
           onClick={() => signOut(auth)}
           className="px-3 py-1.5 rounded-md border border-[var(--ws-border)] text-[var(--ws-text)] hover:bg-[var(--ws-hover)] transition cursor-pointer"

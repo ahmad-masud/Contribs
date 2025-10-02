@@ -54,6 +54,7 @@ export default function HomePage() {
   );
   const [birthYear, setBirthYear] = useState(1990);
   const [cashBalance, setCashBalance] = useState(0);
+  const [marketDataUnavailable, setMarketDataUnavailable] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -280,6 +281,7 @@ export default function HomePage() {
             portfolioValue={portfolioValue + cashBalance}
             hasHoldings={holdings.length > 0}
             cashBalance={cashBalance}
+            marketDataUnavailable={marketDataUnavailable}
           />
           <HoldingsForm onAdd={addHolding} />
           {(() => {
@@ -298,6 +300,7 @@ export default function HomePage() {
                 cashBalance={cashBalance}
                 onRemove={removeHolding}
                 onValueChange={setPortfolioValue}
+                onMarketStatusChange={setMarketDataUnavailable}
               />
             );
           })()}

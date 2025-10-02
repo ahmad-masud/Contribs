@@ -17,25 +17,32 @@ export default function HoldingsList({
   cashBalance = 0,
   onRemove,
   onValueChange,
+  onMarketStatusChange,
 }: {
   items: Holding[];
   netContributed?: number;
   cashBalance?: number;
   onRemove?: (id: string) => void;
   onValueChange?: (totalValue: number) => void;
+  onMarketStatusChange?: (unavailable: boolean) => void;
 }) {
   const [quotes, setQuotes] = useState<Record<string, number>>({});
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     async function fetchQuotes() {
       const unique = Array.from(new Set(items.map((i) => i.symbol)));
+      let unavailable = false;
       const entries = await Promise.all(
         unique.map(async (sym) => {
           try {
             const res = await fetch(
               `/api/quote?symbol=${encodeURIComponent(sym)}`,
             );
+            if (res.status === 503) {
+              unavailable = true;
+            }
             const data = await res.json();
             const price = Number(data?.price);
             return [sym, isFinite(price) ? price : 0] as const;
@@ -46,6 +53,8 @@ export default function HoldingsList({
       );
       if (!mounted) return;
       setQuotes(Object.fromEntries(entries));
+      setServiceUnavailable(unavailable);
+      onMarketStatusChange?.(unavailable);
     }
     if (items.length) fetchQuotes();
     return () => {
@@ -106,6 +115,11 @@ export default function HoldingsList({
             </div>
           ))}
           <div className="h-px bg-[var(--ws-border)]" />
+          {serviceUnavailable && (
+            <div className="text-xs text-[var(--ws-muted)] bg-[var(--ws-muted-card)] border border-[var(--ws-border)] rounded px-2 py-1">
+              Market data service unavailable. Prices and profits are hidden.
+            </div>
+          )}
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm">
               <div className="text-[var(--ws-muted)]">Portfolio value</div>
@@ -113,17 +127,19 @@ export default function HoldingsList({
                 {formatCurrency(totalValue)}
               </div>
             </div>
-            <div className="text-right text-sm">
-              <div className="text-[var(--ws-muted)]">Profit</div>
-              <div
-                className={`text-lg font-semibold tabular-nums ${profitClass}`}
-              >
-                {formatCurrency(profit)}{" "}
-                <span className="text-xs align-middle">
-                  ({percent.toFixed(2)}%)
-                </span>
+            {!serviceUnavailable && (
+              <div className="text-right text-sm">
+                <div className="text-[var(--ws-muted)]">Profit</div>
+                <div
+                  className={`text-lg font-semibold tabular-nums ${profitClass}`}
+                >
+                  {formatCurrency(profit)}{" "}
+                  <span className="text-xs align-middle">
+                    ({percent.toFixed(2)}%)
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <div className="flex items-center justify-between text-xs mt-1">
             <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>

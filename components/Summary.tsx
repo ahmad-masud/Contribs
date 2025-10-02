@@ -41,6 +41,7 @@ interface SummaryProps {
   portfolioValue?: number;
   hasHoldings?: boolean;
   cashBalance?: number;
+  marketDataUnavailable?: boolean;
 }
 
 export default function Summary({
@@ -50,6 +51,7 @@ export default function Summary({
   portfolioValue,
   hasHoldings,
   cashBalance,
+  marketDataUnavailable,
 }: SummaryProps) {
   const summary = useMemo(() => {
     const startYear = Math.max(2009, birthYear + 18);
@@ -174,18 +176,25 @@ export default function Summary({
                         {formatCurrency(portfolioValue)}
                       </div>
                     </div>
-                    <div className="text-right text-sm">
-                      <div className="text-[var(--ws-muted)]">Profit</div>
-                      <div
-                        className={`text-lg font-semibold tabular-nums ${profitClass}`}
-                      >
-                        {formatCurrency(profit)}{" "}
-                        <span className="text-xs align-middle">
-                          ({percent.toFixed(2)}%)
-                        </span>
+                    {!marketDataUnavailable && (
+                      <div className="text-right text-sm">
+                        <div className="text-[var(--ws-muted)]">Profit</div>
+                        <div
+                          className={`text-lg font-semibold tabular-nums ${profitClass}`}
+                        >
+                          {formatCurrency(profit)}{" "}
+                          <span className="text-xs align-middle">
+                            ({percent.toFixed(2)}%)
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
+                  {marketDataUnavailable && (
+                    <div className="text-xs text-[var(--ws-muted)] bg-[var(--ws-muted-card)] border border-[var(--ws-border)] rounded px-2 py-1 mt-1">
+                      Market data service unavailable. Profits are hidden.
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-xs mt-1">
                     <div className="text-[var(--ws-muted)]">
                       Net TFSA contributed
