@@ -49,16 +49,20 @@ export default function CashBalanceInput({
 
   return (
     <div className="p-4 bg-[var(--ws-card)] border border-[var(--ws-border)] rounded-lg">
-      <label className="block text-sm text-[var(--ws-muted)]">Cash balance</label>
+      <label className="block text-sm text-[var(--ws-muted)]">
+        Cash balance
+      </label>
       <div className="mt-1 flex items-center gap-2">
         <input
           type="number"
           step="0.01"
           value={cash}
           onChange={(e) => setCash(Number(e.target.value))}
-          className="p-2 rounded-md border w-48 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
+          className="p-2 rounded-md border w-full sm:w-48 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
         />
-        <span className="text-xs text-[var(--ws-muted)]">{formatCurrency(cash)}</span>
+        <span className="text-xs text-[var(--ws-muted)]">
+          {formatCurrency(cash)}
+        </span>
       </div>
     </div>
   );

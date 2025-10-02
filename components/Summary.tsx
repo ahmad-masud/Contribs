@@ -1,4 +1,3 @@
-// components/Summary.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -22,6 +21,7 @@ const ANNUAL_LIMITS: Record<number, number> = {
   2023: 6500,
   2024: 7000,
   2025: 7000,
+  2026: 7000,
 };
 
 function getYearlyLimit(year: number) {
@@ -37,18 +37,24 @@ interface Item {
 interface SummaryProps {
   items: Item[];
   birthYear: number;
-  allTimeProfit?: number; // legacy option
-  portfolioValue?: number; // to show portfolio value and profit row
-  hasHoldings?: boolean; // distinguishes empty holdings from negative profit
-  cashBalance?: number; // optional cash portion for clarity in portfolio
+  allTimeProfit?: number;
+  portfolioValue?: number;
+  hasHoldings?: boolean;
+  cashBalance?: number;
 }
 
-export default function Summary({ items, birthYear, allTimeProfit, portfolioValue, hasHoldings, cashBalance }: SummaryProps) {
+export default function Summary({
+  items,
+  birthYear,
+  allTimeProfit,
+  portfolioValue,
+  hasHoldings,
+  cashBalance,
+}: SummaryProps) {
   const summary = useMemo(() => {
     const startYear = Math.max(2009, birthYear + 18);
     const currentYear = new Date().getFullYear();
 
-    // initialize byYear map for all years in range
     const byYear: Record<
       number,
       { contributions: number; withdrawals: number }
@@ -57,7 +63,6 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
       byYear[y] = { contributions: 0, withdrawals: 0 };
     }
 
-    // Aggregate amounts, ignore years before eligibility
     items.forEach((it) => {
       const y = new Date(it.date).getFullYear();
       if (y < startYear) return;
@@ -67,7 +72,6 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
       else byYear[y].withdrawals += Number(it.amount);
     });
 
-    // Totals within eligibility window
     let totalContributions = 0;
     let totalWithdrawals = 0;
     for (let y = startYear; y <= currentYear; y++) {
@@ -75,10 +79,6 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
       totalWithdrawals += byYear[y]?.withdrawals ?? 0;
     }
 
-    // Room logic:
-    // Available now = sum(limits up to currentYear)
-    //               + sum(withdrawals for years < currentYear)
-    //               - sum(contributions up to currentYear)
     let cumulativeLimits = 0;
     for (let y = startYear; y <= currentYear; y++) {
       cumulativeLimits += getYearlyLimit(y);
@@ -93,7 +93,7 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
       cumulativeLimits + withdrawalsBeforeThisYear - contributionsUpToCurrent,
     );
 
-    const thisYearWithdrawals = byYear[currentYear]?.withdrawals ?? 0; // adds to next year's room
+    const thisYearWithdrawals = byYear[currentYear]?.withdrawals ?? 0;
 
     return {
       byYear,
@@ -106,11 +106,10 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
     };
   }, [items, birthYear]);
 
-  // Only show years where the user contributed
   const contributedYears = Object.keys(summary.byYear)
     .map(Number)
     .filter((y) => summary.byYear[y].contributions > 0)
-    .sort((a, b) => b - a); // most recent first
+    .sort((a, b) => b - a);
 
   return (
     <div className="p-4 bg-[var(--ws-card)] rounded-lg border border-[var(--ws-border)]">
@@ -143,67 +142,104 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
         </div>
       </div>
 
-      {typeof portfolioValue === 'number' ? (
-        (() => {
-          // Use all-time net contributions for profit to match HoldingsList math
-          const netContributed = items.reduce(
-            (sum, it) => sum + (it.type === "contribution" ? Number(it.amount) : -Number(it.amount)),
-            0,
-          );
-          const hasAssets = Boolean(hasHoldings) || (Number(cashBalance) > 0);
-          if (hasAssets) {
-            const profit = portfolioValue - netContributed;
-            const percent = netContributed > 0 ? (profit / netContributed) * 100 : 0;
-            const profitClass = profit > 0 ? "text-emerald-600" : profit < 0 ? "text-rose-600" : "text-[var(--ws-muted)]";
-            return (
-              <div className="mb-4">
-                <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)] flex items-center justify-between gap-4">
-                  <div className="text-sm">
-                    <div className="text-[var(--ws-muted)]">Portfolio value</div>
-                    <div className="text-lg font-semibold tabular-nums">{formatCurrency(portfolioValue)}</div>
-                  </div>
-                  <div className="text-right text-sm">
-                    <div className="text-[var(--ws-muted)]">Profit</div>
-                    <div className={`text-lg font-semibold tabular-nums ${profitClass}`}>
-                      {formatCurrency(profit)} <span className="text-xs align-middle">({percent.toFixed(2)}%)</span>
+      {typeof portfolioValue === "number"
+        ? (() => {
+            const netContributed = items.reduce(
+              (sum, it) =>
+                sum +
+                (it.type === "contribution"
+                  ? Number(it.amount)
+                  : -Number(it.amount)),
+              0,
+            );
+            const hasAssets = Boolean(hasHoldings) || Number(cashBalance) > 0;
+            if (hasAssets) {
+              const profit = portfolioValue - netContributed;
+              const percent =
+                netContributed > 0 ? (profit / netContributed) * 100 : 0;
+              const profitClass =
+                profit > 0
+                  ? "text-emerald-600"
+                  : profit < 0
+                    ? "text-rose-600"
+                    : "text-[var(--ws-muted)]";
+              return (
+                <div className="mb-4">
+                  <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)] flex items-center justify-between gap-4">
+                    <div className="text-sm">
+                      <div className="text-[var(--ws-muted)]">
+                        Portfolio value
+                      </div>
+                      <div className="text-lg font-semibold tabular-nums">
+                        {formatCurrency(portfolioValue)}
+                      </div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="text-[var(--ws-muted)]">Profit</div>
+                      <div
+                        className={`text-lg font-semibold tabular-nums ${profitClass}`}
+                      >
+                        {formatCurrency(profit)}{" "}
+                        <span className="text-xs align-middle">
+                          ({percent.toFixed(2)}%)
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between text-xs mt-1">
-                  <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>
-                  <div className="tabular-nums">{formatCurrency(netContributed)}</div>
-                </div>
-                {Number(cashBalance) > 0 && (
-                  <div className="flex items-center justify-between text-[10px] mt-1">
-                    <div className="text-[var(--ws-muted)]">Includes cash</div>
-                    <div className="tabular-nums">{formatCurrency(Number(cashBalance))}</div>
+                  <div className="flex items-center justify-between text-xs mt-1">
+                    <div className="text-[var(--ws-muted)]">
+                      Net TFSA contributed
+                    </div>
+                    <div className="tabular-nums">
+                      {formatCurrency(netContributed)}
+                    </div>
                   </div>
-                )}
+                  {Number(cashBalance) > 0 && (
+                    <div className="flex items-center justify-between text-[10px] mt-1">
+                      <div className="text-[var(--ws-muted)]">
+                        Includes cash
+                      </div>
+                      <div className="tabular-nums">
+                        {formatCurrency(Number(cashBalance))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <div className="mb-4">
+                <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
+                  <div className="text-sm text-[var(--ws-muted)] mb-1">
+                    No holdings tracked
+                  </div>
+                  <div className="text-sm text-[var(--ws-muted)]">
+                    Add holdings to see portfolio value and profit.
+                  </div>
+                </div>
+                <div
+                  className={`flex items-center justify-between text-xs mt-1`}
+                >
+                  <div className="text-[var(--ws-muted)]">
+                    Net TFSA contributed
+                  </div>
+                  <div className="tabular-nums">
+                    {formatCurrency(netContributed)}
+                  </div>
+                </div>
               </div>
             );
-          }
-          // No holdings tracked: avoid implying negative profit; show guidance + net contributed
-          return (
-            <div className="mb-4">
-              <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
-                <div className="text-sm text-[var(--ws-muted)] mb-1">No holdings tracked</div>
-                <div className="text-sm text-[var(--ws-muted)]">Add holdings to see portfolio value and profit.</div>
+          })()
+        : typeof allTimeProfit === "number" && (
+            <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
+              <div className="text-sm text-[var(--ws-muted)]">
+                All-time profit
               </div>
-              <div className={`flex items-center justify-between text-xs mt-1`}>
-                <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>
-                <div className="tabular-nums">{formatCurrency(netContributed)}</div>
+              <div className="text-2xl font-semibold tabular-nums">
+                {formatCurrency(allTimeProfit)}
               </div>
             </div>
-          );
-        })()
-      ) : (
-        typeof allTimeProfit === 'number' && (
-          <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
-            <div className="text-sm text-[var(--ws-muted)]">All-time profit</div>
-            <div className="text-2xl font-semibold tabular-nums">{formatCurrency(allTimeProfit)}</div>
-          </div>
-        )
-      )}
+          )}
 
       <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-muted-card)]">
         <div className="text-sm text-[var(--ws-muted)]">

@@ -4,17 +4,16 @@
   --ws-bg: #f6f7f6;
   --ws-card: #ffffff;
   --ws-border: #e6e7e6;
-  --ws-muted: #6b7280; /* gray-500 */
-  --ws-accent: #10b981; /* emerald-500 */
-  --ws-accent-600: #059669; /* emerald-600 */
+  --ws-muted: #6b7280;
+  --ws-accent: #10b981;
+  --ws-accent-600: #059669;
   --ws-text: #0b0f0e;
-  /* extras for charts and subtle UI */
-  --ws-grid: #e5e7eb; /* gray-200 */
-  --ws-axis: #6b7280; /* gray-500 */
+  --ws-grid: #e5e7eb;
+  --ws-axis: #6b7280;
   --ws-tooltip-bg: #ffffff;
   --ws-tooltip-border: #e5e7eb;
-  --ws-hover: #f8fafc; /* slate-50 */
-  --ws-muted-card: #f1f5f9; /* slate-100 */
+  --ws-hover: #f8fafc;
+  --ws-muted-card: #f1f5f9;
 }
 
 html,
@@ -32,7 +31,6 @@ body {
     "Segoe UI Emoji";
 }
 
-/* Smooth number alignment for large figures */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -43,7 +41,7 @@ body {
     --ws-card: #14181b;
     --ws-border: #22262b;
     --ws-muted: #9aa1a6;
-    --ws-accent: #10b981; /* keep brand accent */
+    --ws-accent: #10b981;
     --ws-accent-600: #34d399;
     --ws-text: #e6e8ea;
     --ws-grid: #2b3137;
@@ -55,7 +53,6 @@ body {
   }
 }
 
-/* Hint to the browser for form controls, scrollbars, etc. */
 html {
   color-scheme: light;
 }

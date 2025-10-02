@@ -2,7 +2,11 @@
 
 import { FormEvent, useState } from "react";
 
-export default function HoldingsForm({ onAdd }: { onAdd: (symbol: string, shares: number) => Promise<void> }) {
+export default function HoldingsForm({
+  onAdd,
+}: {
+  onAdd: (symbol: string, shares: number) => Promise<void>;
+}) {
   const [symbol, setSymbol] = useState("");
   const [shares, setShares] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +29,9 @@ export default function HoldingsForm({ onAdd }: { onAdd: (symbol: string, shares
   return (
     <form onSubmit={submit} className="grid grid-cols-3 gap-2 items-end">
       <div className="col-span-2">
-        <label className="block text-sm text-[var(--ws-muted)]">Ticker symbol</label>
+        <label className="block text-sm text-[var(--ws-muted)]">
+          Ticker symbol
+        </label>
         <input
           value={symbol}
           onChange={(e) => setSymbol(e.target.value)}
@@ -34,7 +40,9 @@ export default function HoldingsForm({ onAdd }: { onAdd: (symbol: string, shares
         />
       </div>
       <div>
-        <label className="block text-sm text-[var(--ws-muted)]">Shares (can be fractional)</label>
+        <label className="block text-sm text-[var(--ws-muted)]">
+          Shares (can be fractional)
+        </label>
         <input
           value={shares}
           inputMode="decimal"
@@ -44,7 +52,10 @@ export default function HoldingsForm({ onAdd }: { onAdd: (symbol: string, shares
         />
       </div>
       <div className="col-span-3">
-        <button disabled={loading} className="mt-2 px-4 py-2 bg-[var(--ws-accent)] text-white rounded-md shadow-sm hover:bg-[var(--ws-accent-600)] transition w-full cursor-pointer disabled:opacity-60">
+        <button
+          disabled={loading}
+          className="mt-2 px-4 py-2 bg-[var(--ws-accent)] text-white rounded-md shadow-sm hover:bg-[var(--ws-accent-600)] transition w-full cursor-pointer disabled:opacity-60"
+        >
           {loading ? "Adding..." : "Add holding"}
         </button>
       </div>

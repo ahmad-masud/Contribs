@@ -8,12 +8,15 @@ export async function GET(request: Request) {
   }
   const key = process.env.ALPHA_VANTAGE_API_KEY;
   if (!key) {
-    return NextResponse.json({ error: "Server missing ALPHA_VANTAGE_API_KEY" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server missing ALPHA_VANTAGE_API_KEY" },
+      { status: 500 },
+    );
   }
 
   try {
     const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(
-      symbol
+      symbol,
     )}&apikey=${key}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) {
@@ -21,15 +24,22 @@ export async function GET(request: Request) {
     }
     const data = await res.json();
     const quote = data?.["Global Quote"] ?? {};
-    const rawPrice = quote["05. price"]; 
+    const rawPrice = quote["05. price"];
     const price = Number(rawPrice);
     if (!Number.isFinite(price) || price <= 0) {
       return NextResponse.json({ error: "Unknown symbol" }, { status: 404 });
     }
-    const previousCloseRaw = quote["08. previous close"]; 
+    const previousCloseRaw = quote["08. previous close"];
     const previousClose = Number(previousCloseRaw);
-    return NextResponse.json({ symbol, price, previousClose: Number.isFinite(previousClose) ? previousClose : null });
+    return NextResponse.json({
+      symbol,
+      price,
+      previousClose: Number.isFinite(previousClose) ? previousClose : null,
+    });
   } catch (e) {
-    return NextResponse.json({ error: "Failed to fetch quote" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch quote" },
+      { status: 500 },
+    );
   }
 }

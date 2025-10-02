@@ -1,4 +1,3 @@
-// components/ContributionGraph.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -24,7 +23,6 @@ interface ContributionGraphProps {
 
 export default function ContributionGraph({ items }: ContributionGraphProps) {
   const data = useMemo(() => {
-    // Sort records by date ascending and compute net cumulative (contrib - withdrawal)
     const sorted = [...items].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );

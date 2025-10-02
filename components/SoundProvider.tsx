@@ -31,7 +31,6 @@ export default function SoundProvider({
   });
 
   useEffect(() => {
-    // Preload sounds from public/sounds
     const add = new Audio("/sounds/add.mp3");
     add.preload = "auto";
     add.volume = 0.6;
@@ -43,7 +42,6 @@ export default function SoundProvider({
     soundsRef.current = { add, remove };
 
     return () => {
-      // Cleanup references
       soundsRef.current = { add: null, remove: null };
     };
   }, []);
@@ -53,7 +51,6 @@ export default function SoundProvider({
     if (!a) return;
     try {
       a.currentTime = 0;
-      // Some browsers require a user gesture; swallow rejections.
       void a.play().catch(() => {});
     } catch {}
   }, []);

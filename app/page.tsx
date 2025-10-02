@@ -89,7 +89,6 @@ export default function HomePage() {
     return () => unsub();
   }, [user]);
 
-  // Subscribe to holdings for this user
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, "holdings"), where("uid", "==", user.uid));
@@ -97,7 +96,12 @@ export default function HomePage() {
       setHoldings(
         snapshot.docs.map((d) => {
           const data = d.data() as unknown;
-          const { uid = "", symbol = "", shares = 0, createdAt = 0 } = data as Partial<Holding> & {
+          const {
+            uid = "",
+            symbol = "",
+            shares = 0,
+            createdAt = 0,
+          } = data as Partial<Holding> & {
             symbol?: string;
             shares?: number;
           };
@@ -108,7 +112,7 @@ export default function HomePage() {
             shares: Number(shares),
             createdAt,
           } as Holding;
-        })
+        }),
       );
     });
     return () => unsub();
@@ -145,15 +149,23 @@ export default function HomePage() {
     if (!user) return;
     try {
       const normSymbol = String(symbol).toUpperCase();
-      // Validate symbol via server quote API before saving
-      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(normSymbol)}`);
+      const res = await fetch(
+        `/api/quote?symbol=${encodeURIComponent(normSymbol)}`,
+      );
       if (!res.ok) {
-        toast({ variant: "error", title: "Invalid symbol", description: `${normSymbol} not found` });
+        toast({
+          variant: "error",
+          title: "Invalid symbol",
+          description: `${normSymbol} not found`,
+        });
         return;
       }
-      // Upsert: if symbol already exists for this user, increment shares
       const holdingsCol = collection(db, "holdings");
-      const existingQ = query(holdingsCol, where("uid", "==", user.uid), where("symbol", "==", normSymbol));
+      const existingQ = query(
+        holdingsCol,
+        where("uid", "==", user.uid),
+        where("symbol", "==", normSymbol),
+      );
       const existing = await getDocs(existingQ);
       if (!existing.empty) {
         const docRef = existing.docs[0].ref;
@@ -168,9 +180,17 @@ export default function HomePage() {
         });
       }
       play("add");
-      toast({ variant: "success", title: "Holding saved", description: `${normSymbol} • +${shares} shares` });
+      toast({
+        variant: "success",
+        title: "Holding saved",
+        description: `${normSymbol} • +${shares} shares`,
+      });
     } catch {
-      toast({ variant: "error", title: "Error", description: "Could not save holding.`" });
+      toast({
+        variant: "error",
+        title: "Error",
+        description: "Could not save holding.`",
+      });
     }
   }
 
@@ -181,7 +201,11 @@ export default function HomePage() {
       play("remove");
       toast({ variant: "success", title: "Holding removed" });
     } catch {
-      toast({ variant: "error", title: "Error", description: "Could not remove holding" });
+      toast({
+        variant: "error",
+        title: "Error",
+        description: "Could not remove holding",
+      });
     }
   }
 
@@ -229,8 +253,16 @@ export default function HomePage() {
           <AuthButtons user={user} />
         </header>
         <section className="grid gap-3 sm:gap-4">
-          <BirthYearInput user={user} birthYear={birthYear} setBirthYear={setBirthYear} />
-          <CashBalanceInput user={user} cash={cashBalance} setCash={setCashBalance} />
+          <BirthYearInput
+            user={user}
+            birthYear={birthYear}
+            setBirthYear={setBirthYear}
+          />
+          <CashBalanceInput
+            user={user}
+            cash={cashBalance}
+            setCash={setCashBalance}
+          />
           <ContributionForm
             amount={amount}
             setAmount={setAmount}
@@ -242,12 +274,23 @@ export default function HomePage() {
             }
             addItem={addItem}
           />
-          <Summary items={items} birthYear={birthYear} portfolioValue={portfolioValue + cashBalance} hasHoldings={holdings.length > 0} cashBalance={cashBalance} />
-          {/* Holdings management */}
+          <Summary
+            items={items}
+            birthYear={birthYear}
+            portfolioValue={portfolioValue + cashBalance}
+            hasHoldings={holdings.length > 0}
+            cashBalance={cashBalance}
+          />
           <HoldingsForm onAdd={addHolding} />
           {(() => {
-            // Net TFSA contributions = contributions - withdrawals
-            const netContributed = items.reduce((sum, it) => sum + (it.type === "contribution" ? Number(it.amount) : -Number(it.amount)), 0);
+            const netContributed = items.reduce(
+              (sum, it) =>
+                sum +
+                (it.type === "contribution"
+                  ? Number(it.amount)
+                  : -Number(it.amount)),
+              0,
+            );
             return (
               <HoldingsList
                 items={holdings}

@@ -11,7 +11,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-[var(--ws-bg)] text-[var(--ws-text)]">
+      <body className="bg-[var(--ws-bg)] text-[var(--ws-text)] overflow-x-hidden">
         <SoundProvider>
           <ToastProvider>{children}</ToastProvider>
         </SoundProvider>

@@ -55,7 +55,7 @@ export default function BirthYearInput({
         type="number"
         value={birthYear}
         onChange={(e) => setBirthYear(Number(e.target.value))}
-        className="mt-1 p-2 rounded-md border w-40 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
+        className="mt-1 p-2 rounded-md border w-full sm:w-40 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
       />
     </div>
   );
