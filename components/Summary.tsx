@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { formatCurrency } from "../lib/format";
 
 const ANNUAL_LIMITS: Record<number, number> = {
   2009: 5000,
@@ -117,7 +118,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
             Available TFSA room now
           </div>
           <div className="text-2xl font-semibold tabular-nums">
-            ${summary.availableRoomNow.toLocaleString()}
+            {formatCurrency(summary.availableRoomNow)}
           </div>
         </div>
         <div>
@@ -125,7 +126,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
             Total contributions
           </div>
           <div className="text-2xl font-semibold tabular-nums">
-            ${summary.totalContributions.toLocaleString()}
+            {formatCurrency(summary.totalContributions)}
           </div>
         </div>
         <div>
@@ -133,7 +134,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
             Total withdrawals
           </div>
           <div className="text-2xl font-semibold tabular-nums">
-            ${summary.totalWithdrawals.toLocaleString()}
+            {formatCurrency(summary.totalWithdrawals)}
           </div>
         </div>
       </div>
@@ -143,7 +144,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
           Next year&apos;s added room from this year&apos;s withdrawals
         </div>
         <div className="text-xl font-semibold tabular-nums">
-          ${summary.thisYearWithdrawals.toLocaleString()}
+          {formatCurrency(summary.thisYearWithdrawals)}
         </div>
       </div>
 
@@ -162,7 +163,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
             >
               <span>{year}</span>
               <span>
-                ${summary.byYear[year].contributions.toLocaleString()}
+                {formatCurrency(summary.byYear[year].contributions)}
               </span>
             </div>
           ))}

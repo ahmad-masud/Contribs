@@ -1,6 +1,6 @@
 export const currency = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
+  style: 'currency',
+  currency: 'CAD',
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });

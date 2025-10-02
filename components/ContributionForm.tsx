@@ -30,7 +30,7 @@ export default function ContributionForm({
           type="number"
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
         />
       </div>
       <div>
@@ -39,7 +39,7 @@ export default function ContributionForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] cursor-pointer outline-none focus:outline-none focus:ring-0"
         />
       </div>
       <div>
@@ -47,7 +47,7 @@ export default function ContributionForm({
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] cursor-pointer outline-none focus:outline-none focus:ring-0"
         >
           <option value="contribution">Contribution</option>
           <option value="withdrawal">Withdrawal</option>

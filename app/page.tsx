@@ -22,6 +22,8 @@ import RecordsList from "../components/RecordsList";
 import ImportantNotice from "../components/ImportantNotice";
 import ContributionGraph from "../components/ContributionGraph";
 import Loading from "../components/Loading";
+import { useToast } from "../components/ToastProvider";
+import { useSound } from "../components/SoundProvider";
 
 interface ContributionItem {
   id: string;
@@ -33,6 +35,8 @@ interface ContributionItem {
 }
 
 export default function HomePage() {
+  const { toast } = useToast();
+  const { play } = useSound();
   const [user, authLoading] = useAuthState(auth);
   const [items, setItems] = useState<ContributionItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -78,18 +82,30 @@ export default function HomePage() {
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    await addDoc(collection(db, "contributions"), {
-      uid: user.uid,
-      amount: Number(amount),
-      date,
-      type,
-      createdAt: Date.now(),
-    });
-    setAmount(1000);
+    try {
+      await addDoc(collection(db, "contributions"), {
+        uid: user.uid,
+        amount: Number(amount),
+        date,
+        type,
+        createdAt: Date.now(),
+      });
+  setAmount(1000);
+  play("add");
+      toast({ variant: "success", title: "Saved", description: "Record added." });
+    } catch (err) {
+      toast({ variant: "error", title: "Error", description: "Could not add record." });
+    }
   }
 
   async function removeItem(id: string) {
-    await deleteDoc(doc(db, "contributions", id));
+    try {
+  await deleteDoc(doc(db, "contributions", id));
+  play("remove");
+      toast({ variant: "success", title: "Removed", description: "Record deleted." });
+    } catch (err) {
+      toast({ variant: "error", title: "Error", description: "Could not delete record." });
+    }
   }
 
   if (authLoading) {
