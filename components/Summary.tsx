@@ -39,9 +39,11 @@ interface SummaryProps {
   birthYear: number;
   allTimeProfit?: number; // legacy option
   portfolioValue?: number; // to show portfolio value and profit row
+  hasHoldings?: boolean; // distinguishes empty holdings from negative profit
+  cashBalance?: number; // optional cash portion for clarity in portfolio
 }
 
-export default function Summary({ items, birthYear, allTimeProfit, portfolioValue }: SummaryProps) {
+export default function Summary({ items, birthYear, allTimeProfit, portfolioValue, hasHoldings, cashBalance }: SummaryProps) {
   const summary = useMemo(() => {
     const startYear = Math.max(2009, birthYear + 18);
     const currentYear = new Date().getFullYear();
@@ -143,25 +145,51 @@ export default function Summary({ items, birthYear, allTimeProfit, portfolioValu
 
       {typeof portfolioValue === 'number' ? (
         (() => {
-          const netContributed = summary.totalContributions - summary.totalWithdrawals;
-          const profit = portfolioValue - netContributed;
-          const percent = netContributed > 0 ? (profit / netContributed) * 100 : 0;
-          const profitClass = profit > 0 ? "text-emerald-600" : profit < 0 ? "text-rose-600" : "text-[var(--ws-muted)]";
-          return (
-            <div className="mb-4">
-              <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)] flex items-center justify-between gap-4">
-                <div className="text-sm">
-                  <div className="text-[var(--ws-muted)]">Portfolio value</div>
-                  <div className="text-lg font-semibold tabular-nums">{formatCurrency(portfolioValue)}</div>
-                </div>
-                <div className="text-right text-sm">
-                  <div className="text-[var(--ws-muted)]">Profit</div>
-                  <div className={`text-lg font-semibold tabular-nums ${profitClass}`}>
-                    {formatCurrency(profit)} <span className="text-xs align-middle">({percent.toFixed(2)}%)</span>
+          // Use all-time net contributions for profit to match HoldingsList math
+          const netContributed = items.reduce(
+            (sum, it) => sum + (it.type === "contribution" ? Number(it.amount) : -Number(it.amount)),
+            0,
+          );
+          const hasAssets = Boolean(hasHoldings) || (Number(cashBalance) > 0);
+          if (hasAssets) {
+            const profit = portfolioValue - netContributed;
+            const percent = netContributed > 0 ? (profit / netContributed) * 100 : 0;
+            const profitClass = profit > 0 ? "text-emerald-600" : profit < 0 ? "text-rose-600" : "text-[var(--ws-muted)]";
+            return (
+              <div className="mb-4">
+                <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)] flex items-center justify-between gap-4">
+                  <div className="text-sm">
+                    <div className="text-[var(--ws-muted)]">Portfolio value</div>
+                    <div className="text-lg font-semibold tabular-nums">{formatCurrency(portfolioValue)}</div>
+                  </div>
+                  <div className="text-right text-sm">
+                    <div className="text-[var(--ws-muted)]">Profit</div>
+                    <div className={`text-lg font-semibold tabular-nums ${profitClass}`}>
+                      {formatCurrency(profit)} <span className="text-xs align-middle">({percent.toFixed(2)}%)</span>
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>
+                  <div className="tabular-nums">{formatCurrency(netContributed)}</div>
+                </div>
+                {Number(cashBalance) > 0 && (
+                  <div className="flex items-center justify-between text-[10px] mt-1">
+                    <div className="text-[var(--ws-muted)]">Includes cash</div>
+                    <div className="tabular-nums">{formatCurrency(Number(cashBalance))}</div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between text-xs mt-1">
+            );
+          }
+          // No holdings tracked: avoid implying negative profit; show guidance + net contributed
+          return (
+            <div className="mb-4">
+              <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
+                <div className="text-sm text-[var(--ws-muted)] mb-1">No holdings tracked</div>
+                <div className="text-sm text-[var(--ws-muted)]">Add holdings to see portfolio value and profit.</div>
+              </div>
+              <div className={`flex items-center justify-between text-xs mt-1`}>
                 <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>
                 <div className="tabular-nums">{formatCurrency(netContributed)}</div>
               </div>

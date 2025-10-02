@@ -11,11 +11,14 @@ import {
   where,
   doc,
   orderBy,
+  getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 
 import AuthButtons from "../components/AuthButtons";
 import BirthYearInput from "../components/BirthYearInput";
+import CashBalanceInput from "../components/CashBalanceInput";
 import ContributionForm from "../components/ContributionForm";
 import Summary from "../components/Summary";
 import RecordsList from "../components/RecordsList";
@@ -50,6 +53,7 @@ export default function HomePage() {
     "contribution",
   );
   const [birthYear, setBirthYear] = useState(1990);
+  const [cashBalance, setCashBalance] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -140,20 +144,31 @@ export default function HomePage() {
   async function addHolding(symbol: string, shares: number) {
     if (!user) return;
     try {
+      const normSymbol = String(symbol).toUpperCase();
       // Validate symbol via server quote API before saving
-      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`);
+      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(normSymbol)}`);
       if (!res.ok) {
-        toast({ variant: "error", title: "Invalid symbol", description: `${symbol} not found` });
+        toast({ variant: "error", title: "Invalid symbol", description: `${normSymbol} not found` });
         return;
       }
-      await addDoc(collection(db, "holdings"), {
-        uid: user.uid,
-        symbol,
-        shares,
-        createdAt: Date.now(),
-      });
+      // Upsert: if symbol already exists for this user, increment shares
+      const holdingsCol = collection(db, "holdings");
+      const existingQ = query(holdingsCol, where("uid", "==", user.uid), where("symbol", "==", normSymbol));
+      const existing = await getDocs(existingQ);
+      if (!existing.empty) {
+        const docRef = existing.docs[0].ref;
+        const prevShares = Number(existing.docs[0].data()?.shares ?? 0);
+        await updateDoc(docRef, { shares: prevShares + Number(shares) });
+      } else {
+        await addDoc(holdingsCol, {
+          uid: user.uid,
+          symbol: normSymbol,
+          shares,
+          createdAt: Date.now(),
+        });
+      }
       play("add");
-      toast({ variant: "success", title: "Holding saved", description: `${symbol} • ${shares} shares` });
+      toast({ variant: "success", title: "Holding saved", description: `${normSymbol} • +${shares} shares` });
     } catch {
       toast({ variant: "error", title: "Error", description: "Could not save holding.`" });
     }
@@ -214,11 +229,8 @@ export default function HomePage() {
           <AuthButtons user={user} />
         </header>
         <section className="grid gap-3 sm:gap-4">
-          <BirthYearInput
-            user={user}
-            birthYear={birthYear}
-            setBirthYear={setBirthYear}
-          />
+          <BirthYearInput user={user} birthYear={birthYear} setBirthYear={setBirthYear} />
+          <CashBalanceInput user={user} cash={cashBalance} setCash={setCashBalance} />
           <ContributionForm
             amount={amount}
             setAmount={setAmount}
@@ -230,7 +242,7 @@ export default function HomePage() {
             }
             addItem={addItem}
           />
-          <Summary items={items} birthYear={birthYear} portfolioValue={portfolioValue} />
+          <Summary items={items} birthYear={birthYear} portfolioValue={portfolioValue + cashBalance} hasHoldings={holdings.length > 0} cashBalance={cashBalance} />
           {/* Holdings management */}
           <HoldingsForm onAdd={addHolding} />
           {(() => {
@@ -240,6 +252,7 @@ export default function HomePage() {
               <HoldingsList
                 items={holdings}
                 netContributed={netContributed}
+                cashBalance={cashBalance}
                 onRemove={removeHolding}
                 onValueChange={setPortfolioValue}
               />
