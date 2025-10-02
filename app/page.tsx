@@ -24,6 +24,8 @@ import ContributionGraph from "../components/ContributionGraph";
 import Loading from "../components/Loading";
 import { useToast } from "../components/ToastProvider";
 import { useSound } from "../components/SoundProvider";
+import HoldingsForm from "../components/HoldingsForm";
+import HoldingsList, { type Holding } from "../components/HoldingsList";
 
 interface ContributionItem {
   id: string;
@@ -40,6 +42,8 @@ export default function HomePage() {
   const [user, authLoading] = useAuthState(auth);
   const [items, setItems] = useState<ContributionItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [portfolioValue, setPortfolioValue] = useState(0);
   const [amount, setAmount] = useState(1000);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [type, setType] = useState<"contribution" | "withdrawal">(
@@ -81,6 +85,31 @@ export default function HomePage() {
     return () => unsub();
   }, [user]);
 
+  // Subscribe to holdings for this user
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, "holdings"), where("uid", "==", user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setHoldings(
+        snapshot.docs.map((d) => {
+          const data = d.data() as unknown;
+          const { uid = "", symbol = "", shares = 0, createdAt = 0 } = data as Partial<Holding> & {
+            symbol?: string;
+            shares?: number;
+          };
+          return {
+            id: d.id,
+            uid,
+            symbol: String(symbol).toUpperCase(),
+            shares: Number(shares),
+            createdAt,
+          } as Holding;
+        })
+      );
+    });
+    return () => unsub();
+  }, [user]);
+
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
@@ -105,6 +134,39 @@ export default function HomePage() {
         title: "Error",
         description: "Could not add record.",
       });
+    }
+  }
+
+  async function addHolding(symbol: string, shares: number) {
+    if (!user) return;
+    try {
+      // Validate symbol via server quote API before saving
+      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`);
+      if (!res.ok) {
+        toast({ variant: "error", title: "Invalid symbol", description: `${symbol} not found` });
+        return;
+      }
+      await addDoc(collection(db, "holdings"), {
+        uid: user.uid,
+        symbol,
+        shares,
+        createdAt: Date.now(),
+      });
+      play("add");
+      toast({ variant: "success", title: "Holding saved", description: `${symbol} • ${shares} shares` });
+    } catch {
+      toast({ variant: "error", title: "Error", description: "Could not save holding.`" });
+    }
+  }
+
+  async function removeHolding(id: string) {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, "holdings", id));
+      play("remove");
+      toast({ variant: "success", title: "Holding removed" });
+    } catch {
+      toast({ variant: "error", title: "Error", description: "Could not remove holding" });
     }
   }
 
@@ -168,7 +230,21 @@ export default function HomePage() {
             }
             addItem={addItem}
           />
-          <Summary items={items} birthYear={birthYear} />
+          <Summary items={items} birthYear={birthYear} portfolioValue={portfolioValue} />
+          {/* Holdings management */}
+          <HoldingsForm onAdd={addHolding} />
+          {(() => {
+            // Net TFSA contributions = contributions - withdrawals
+            const netContributed = items.reduce((sum, it) => sum + (it.type === "contribution" ? Number(it.amount) : -Number(it.amount)), 0);
+            return (
+              <HoldingsList
+                items={holdings}
+                netContributed={netContributed}
+                onRemove={removeHolding}
+                onValueChange={setPortfolioValue}
+              />
+            );
+          })()}
           <ContributionGraph items={items} />
           <RecordsList items={items} removeItem={removeItem} />
           <ImportantNotice />

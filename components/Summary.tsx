@@ -37,9 +37,11 @@ interface Item {
 interface SummaryProps {
   items: Item[];
   birthYear: number;
+  allTimeProfit?: number; // legacy option
+  portfolioValue?: number; // to show portfolio value and profit row
 }
 
-export default function Summary({ items, birthYear }: SummaryProps) {
+export default function Summary({ items, birthYear, allTimeProfit, portfolioValue }: SummaryProps) {
   const summary = useMemo(() => {
     const startYear = Math.max(2009, birthYear + 18);
     const currentYear = new Date().getFullYear();
@@ -138,6 +140,42 @@ export default function Summary({ items, birthYear }: SummaryProps) {
           </div>
         </div>
       </div>
+
+      {typeof portfolioValue === 'number' ? (
+        (() => {
+          const netContributed = summary.totalContributions - summary.totalWithdrawals;
+          const profit = portfolioValue - netContributed;
+          const percent = netContributed > 0 ? (profit / netContributed) * 100 : 0;
+          const profitClass = profit > 0 ? "text-emerald-600" : profit < 0 ? "text-rose-600" : "text-[var(--ws-muted)]";
+          return (
+            <div className="mb-4">
+              <div className="p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)] flex items-center justify-between gap-4">
+                <div className="text-sm">
+                  <div className="text-[var(--ws-muted)]">Portfolio value</div>
+                  <div className="text-lg font-semibold tabular-nums">{formatCurrency(portfolioValue)}</div>
+                </div>
+                <div className="text-right text-sm">
+                  <div className="text-[var(--ws-muted)]">Profit</div>
+                  <div className={`text-lg font-semibold tabular-nums ${profitClass}`}>
+                    {formatCurrency(profit)} <span className="text-xs align-middle">({percent.toFixed(2)}%)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <div className="text-[var(--ws-muted)]">Net TFSA contributed</div>
+                <div className="tabular-nums">{formatCurrency(netContributed)}</div>
+              </div>
+            </div>
+          );
+        })()
+      ) : (
+        typeof allTimeProfit === 'number' && (
+          <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-card)]">
+            <div className="text-sm text-[var(--ws-muted)]">All-time profit</div>
+            <div className="text-2xl font-semibold tabular-nums">{formatCurrency(allTimeProfit)}</div>
+          </div>
+        )
+      )}
 
       <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-muted-card)]">
         <div className="text-sm text-[var(--ws-muted)]">
