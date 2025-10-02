@@ -44,20 +44,22 @@ export default function HomePage() {
     const q = query(
       collection(db, "contributions"),
       where("uid", "==", user.uid),
-      orderBy("date", "desc"),
+      orderBy("date", "desc")
     );
     return onSnapshot(q, (snapshot) => {
-      setItems(snapshot.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          uid: data.uid ?? "",
-          type: data.type ?? "contribution",
-          amount: Number(data.amount) ?? 0,
-          date: data.date ?? "",
-          createdAt: data.createdAt ?? 0,
-        };
-      }));
+      setItems(
+        snapshot.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            uid: data.uid ?? "",
+            type: (data.type as "contribution" | "withdrawal") ?? "contribution",
+            amount: Number(data.amount) ?? 0,
+            date: data.date ?? "",
+            createdAt: data.createdAt ?? 0,
+          };
+        })
+      );
     });
   }, [user]);
 
@@ -87,34 +89,28 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
-        <header className="flex items-center justify-between py-3">
-          <h1 className="text-2xl font-semibold tracking-tight">Contribs</h1>
+        <header className="flex items-center justify-between py-2 sm:py-3">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Contribs</h1>
           <AuthButtons user={user} />
         </header>
-        <div className="bg-[var(--ws-card)] border border-[var(--ws-border)] rounded-xl shadow-sm p-6">
-          <section className="grid gap-4">
-            <BirthYearInput
-              user={user}
-              birthYear={birthYear}
-              setBirthYear={setBirthYear}
-            />
-            <ContributionForm
-              amount={amount}
-              setAmount={setAmount}
-              date={date}
-              setDate={setDate}
-              type={type}
-              setType={(val: string) => setType(val as "contribution" | "withdrawal")}
-              addItem={addItem}
-            />
-            <Summary items={items} birthYear={birthYear} />
-            <ContributionGraph items={items} />
-            <RecordsList items={items} removeItem={removeItem} />
-            <ImportantNotice />
-          </section>
-        </div>
+        <section className="grid gap-3 sm:gap-4">
+          <BirthYearInput user={user} birthYear={birthYear} setBirthYear={setBirthYear} />
+          <ContributionForm
+            amount={amount}
+            setAmount={setAmount}
+            date={date}
+            setDate={setDate}
+            type={type}
+            setType={(val: string) => setType(val as "contribution" | "withdrawal")}
+            addItem={addItem}
+          />
+          <Summary items={items} birthYear={birthYear} />
+          <ContributionGraph items={items} />
+          <RecordsList items={items} removeItem={removeItem} />
+          <ImportantNotice />
+        </section>
       </div>
     </div>
   );
