@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase";
 import {
   collection,
@@ -22,12 +22,21 @@ import RecordsList from "../components/RecordsList";
 import ImportantNotice from "../components/ImportantNotice";
 import ContributionGraph from "../components/ContributionGraph";
 
+interface ContributionItem {
+  id: string;
+  uid: string;
+  type: "contribution" | "withdrawal";
+  amount: number;
+  date: string;
+  createdAt: number;
+}
+
 export default function HomePage() {
   const [user] = useAuthState(auth);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ContributionItem[]>([]);
   const [amount, setAmount] = useState(1000);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [type, setType] = useState("contribution");
+  const [type, setType] = useState<"contribution" | "withdrawal">("contribution");
   const [birthYear, setBirthYear] = useState(1990);
 
   useEffect(() => {
@@ -38,7 +47,17 @@ export default function HomePage() {
       orderBy("date", "desc"),
     );
     return onSnapshot(q, (snapshot) => {
-      setItems(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setItems(snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          uid: data.uid ?? "",
+          type: data.type ?? "contribution",
+          amount: Number(data.amount) ?? 0,
+          date: data.date ?? "",
+          createdAt: data.createdAt ?? 0,
+        };
+      }));
     });
   }, [user]);
 
@@ -87,7 +106,7 @@ export default function HomePage() {
               date={date}
               setDate={setDate}
               type={type}
-              setType={setType}
+              setType={(val: string) => setType(val as "contribution" | "withdrawal")}
               addItem={addItem}
             />
             <Summary items={items} birthYear={birthYear} />

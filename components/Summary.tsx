@@ -140,7 +140,7 @@ export default function Summary({ items, birthYear }: SummaryProps) {
 
       <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-muted-card)]">
         <div className="text-sm text-[var(--ws-muted)]">
-          Next year's added room from this year's withdrawals
+          Next year&apos;s added room from this year&apos;s withdrawals
         </div>
         <div className="text-xl font-semibold tabular-nums">
           ${summary.thisYearWithdrawals.toLocaleString()}

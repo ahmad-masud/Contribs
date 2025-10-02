@@ -1,11 +1,20 @@
 "use client";
 import { formatCurrency, formatDate } from "../lib/format";
 
+interface ContributionItem {
+  id: string;
+  uid: string;
+  type: "contribution" | "withdrawal";
+  amount: number;
+  date: string;
+  createdAt: number;
+}
+
 export default function RecordsList({
   items,
   removeItem,
 }: {
-  items: any[];
+  items: ContributionItem[];
   removeItem: (id: string) => void;
 }) {
   return (
