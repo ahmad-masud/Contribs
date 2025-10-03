@@ -172,7 +172,7 @@ export default function HoldingsList({
               key={r.id}
               className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4 sm:justify-between text-sm"
             >
-              <div className="font-medium">{r.symbol}</div>
+              <div className="font-medium truncate max-w-[40vw] sm:max-w-none">{r.symbol}</div>
               <div className="text-[var(--ws-muted)] order-3 sm:order-none">
                 {r.shares} shares
               </div>

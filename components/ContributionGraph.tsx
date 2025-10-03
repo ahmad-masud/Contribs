@@ -97,9 +97,9 @@ export default function ContributionGraph({ items }: ContributionGraphProps) {
 
   return (
     <div className="p-4 bg-[var(--ws-card)] rounded-lg border border-[var(--ws-border)] mt-2">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <h3 className="font-medium text-lg">Net Contributions Over Time</h3>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           {(
             [
               ["1M", "1M"],

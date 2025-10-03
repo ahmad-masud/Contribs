@@ -29,6 +29,8 @@ body {
     Arial,
     "Apple Color Emoji",
     "Segoe UI Emoji";
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .tabular-nums {
