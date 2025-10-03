@@ -21,6 +21,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 
 import AuthButtons from "../components/AuthButtons";
 import ContributionForm from "../components/ContributionForm";
+import EmailPasswordSignIn from "../components/EmailPasswordSignIn";
 import Summary from "../components/Summary";
 import RecordsList from "../components/RecordsList";
 import ImportantNotice from "../components/ImportantNotice";
@@ -283,8 +284,27 @@ export default function HomePage() {
                 place.
               </p>
             </div>
-            <div className="w-full pt-2">
-              <AuthButtons user={null} />
+            <div className="w-full pt-2 space-y-5">
+              <div>
+                <EmailPasswordSignIn />
+              </div>
+              <div className="relative flex items-center text-[10px] uppercase tracking-wide font-medium text-[var(--ws-muted)]">
+                <span className="flex-1 h-px bg-[var(--ws-border)]" />
+                <span className="px-3">or</span>
+                <span className="flex-1 h-px bg-[var(--ws-border)]" />
+              </div>
+              <div>
+                <AuthButtons user={null} />
+              </div>
+              <div className="text-center text-xs text-[var(--ws-muted)]">
+                New here? {""}
+                <a
+                  href="/register"
+                  className="text-[var(--ws-accent)] hover:underline"
+                >
+                  Create an account
+                </a>
+              </div>
             </div>
           </div>
         </div>

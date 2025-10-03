@@ -21,8 +21,6 @@ import {
   getDoc,
   setDoc,
 } from "firebase/firestore";
-import { useCurrency } from "../../components/CurrencyProvider";
-import { SUPPORTED_CURRENCIES } from "../../components/CurrencyProvider";
 
 export default function AccountPage() {
   const [user, loading] = useAuthState(auth);
@@ -33,7 +31,6 @@ export default function AccountPage() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { preferred, setPreferred, loading: currencyLoading } = useCurrency();
 
   useEffect(() => {
     if (!user) return;
@@ -349,7 +346,7 @@ export default function AccountPage() {
           <div className="text-sm text-[var(--ws-muted)] mb-3">
             Manage your Google-linked profile details.
           </div>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <label className="block text-sm text-[var(--ws-muted)]">
                 Display name
@@ -385,26 +382,6 @@ export default function AccountPage() {
                 }
                 placeholder="YYYY"
               />
-            </div>
-            <div>
-              <label className="block text-sm text-[var(--ws-muted)]">
-                Currency
-              </label>
-              <select
-                className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0 cursor-pointer"
-                value={preferred}
-                disabled={currencyLoading}
-                onChange={(e) => {
-                  setPreferred(e.target.value);
-                  setSuccess("Currency updated");
-                }}
-              >
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
           <div className="mt-3 flex gap-2">
