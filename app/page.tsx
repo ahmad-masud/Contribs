@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { auth, db } from "../lib/firebase";
 import {
   collection,
@@ -250,8 +251,27 @@ export default function HomePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--ws-bg)] text-[var(--ws-text)]">
-        <AuthButtons user={null} />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--ws-bg)] text-[var(--ws-text)] p-4">
+        <div className="w-full max-w-md rounded-xl border border-[var(--ws-border)] bg-[var(--ws-card)] p-6 shadow-sm">
+          <div className="flex flex-col items-center text-center gap-4">
+            <Image
+              src="/images/logo.png"
+              alt="Contribs"
+              width={56}
+              height={56}
+              priority
+            />
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight">Contribs</h1>
+              <p className="mt-1 text-sm text-[var(--ws-muted)]">
+                Track TFSA contributions, holdings, and cash in one simple place.
+              </p>
+            </div>
+            <div className="w-full pt-2">
+              <AuthButtons user={null} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

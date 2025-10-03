@@ -53,9 +53,17 @@ export default function AuthButtons({ user }: { user: User | null }) {
   return (
     <button
       onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}
-      className="px-4 py-2 rounded-md bg-[var(--ws-accent)] text-white hover:bg-[var(--ws-accent-600)] transition cursor-pointer shadow-sm"
+      aria-label="Continue with Google"
+      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-[#dadce0] bg-white text-[#3c4043] hover:bg-[#f8fafc] active:bg-[#f1f3f4] transition cursor-pointer shadow-sm"
     >
-      Continue with Google
+      <Image
+        src="/images/google.png"
+        alt="Google"
+        width={18}
+        height={18}
+        priority
+      />
+      <span>Continue with Google</span>
     </button>
   );
 }
