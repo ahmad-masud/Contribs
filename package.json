@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "firebase": "^12.3.0",
+    "jspdf": "^3.0.3",
     "next": "15.5.4",
     "prettier": "^3.6.2",
     "react": "19.1.0",
+    "react-bootstrap-icons": "^1.11.6",
     "react-dom": "19.1.0",
     "react-firebase-hooks": "^5.1.1",
     "recharts": "^3.2.1"

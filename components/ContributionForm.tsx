@@ -22,9 +22,9 @@ export default function ContributionForm({
   return (
     <form
       onSubmit={addItem}
-      className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
+      className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end"
     >
-      <div className="col-span-2">
+      <div>
         <label className="block text-sm text-[var(--ws-muted)]">Amount</label>
         <input
           type="number"
@@ -53,7 +53,7 @@ export default function ContributionForm({
           <option value="withdrawal">Withdrawal</option>
         </select>
       </div>
-      <div className="sm:col-span-4">
+      <div className="sm:col-span-3">
         <button className="mt-2 px-4 py-2 bg-[var(--ws-accent)] text-white rounded-md shadow-sm hover:bg-[var(--ws-accent-600)] transition w-full cursor-pointer">
           Add record
         </button>

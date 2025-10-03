@@ -13,12 +13,12 @@ import {
   orderBy,
   getDocs,
   updateDoc,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 
 import AuthButtons from "../components/AuthButtons";
-import BirthYearInput from "../components/BirthYearInput";
-import CashBalanceInput from "../components/CashBalanceInput";
 import ContributionForm from "../components/ContributionForm";
 import Summary from "../components/Summary";
 import RecordsList from "../components/RecordsList";
@@ -26,9 +26,9 @@ import ImportantNotice from "../components/ImportantNotice";
 import ContributionGraph from "../components/ContributionGraph";
 import Loading from "../components/Loading";
 import { useToast } from "../components/ToastProvider";
-import { useSound } from "../components/SoundProvider";
 import HoldingsForm from "../components/HoldingsForm";
 import HoldingsList, { type Holding } from "../components/HoldingsList";
+import Modal from "../components/Modal";
 
 interface ContributionItem {
   id: string;
@@ -41,7 +41,6 @@ interface ContributionItem {
 
 export default function HomePage() {
   const { toast } = useToast();
-  const { play } = useSound();
   const [user, authLoading] = useAuthState(auth);
   const [items, setItems] = useState<ContributionItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -55,9 +54,30 @@ export default function HomePage() {
   const [birthYear, setBirthYear] = useState(1990);
   const [cashBalance, setCashBalance] = useState(0);
   const [marketDataUnavailable, setMarketDataUnavailable] = useState(false);
+  const [openContribution, setOpenContribution] = useState(false);
+  const [openHolding, setOpenHolding] = useState(false);
+  const [openBirthYear, setOpenBirthYear] = useState(false);
+  const [openCash, setOpenCash] = useState(false);
+  const [cashEdit, setCashEdit] = useState<number>(0);
+  const [quotesLoading, setQuotesLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    getDoc(userRef).then((snap) => {
+      const by = snap.exists()
+        ? (snap.data() as { birthYear?: number } | undefined)?.birthYear
+        : undefined;
+      if (typeof by === "number") {
+        setBirthYear(by);
+      } else {
+        setOpenBirthYear(true);
+      }
+      const cash = snap.exists()
+        ? Number((snap.data() as { cash?: number } | undefined)?.cash ?? 0)
+        : 0;
+      setCashBalance(Number.isFinite(cash) ? cash : 0);
+    });
     const q = query(
       collection(db, "contributions"),
       where("uid", "==", user.uid),
@@ -131,7 +151,6 @@ export default function HomePage() {
         createdAt: Date.now(),
       });
       setAmount(1000);
-      play("add");
       toast({
         variant: "success",
         title: "Saved",
@@ -180,7 +199,6 @@ export default function HomePage() {
           createdAt: Date.now(),
         });
       }
-      play("add");
       toast({
         variant: "success",
         title: "Holding saved",
@@ -199,7 +217,6 @@ export default function HomePage() {
     if (!user) return;
     try {
       await deleteDoc(doc(db, "holdings", id));
-      play("remove");
       toast({ variant: "success", title: "Holding removed" });
     } catch {
       toast({
@@ -213,7 +230,6 @@ export default function HomePage() {
   async function removeItem(id: string) {
     try {
       await deleteDoc(doc(db, "contributions", id));
-      play("remove");
       toast({
         variant: "success",
         title: "Removed",
@@ -247,34 +263,31 @@ export default function HomePage() {
   return (
     <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
+        {quotesLoading && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-[var(--ws-bg)] text-[var(--ws-text)]">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-6 w-6 rounded-full border-2 border-[var(--ws-border)] border-t-[var(--ws-accent)] animate-spin"
+                aria-label="Loading market data"
+              />
+              <span className="text-sm text-[var(--ws-muted)]">
+                Loading market data…
+              </span>
+            </div>
+          </div>
+        )}
         <header className="flex items-center justify-between py-2 sm:py-3">
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-            Contribs
+            {(() => {
+              const raw =
+                user?.displayName || user?.email || user?.uid || "there";
+              const first = String(raw).split("@")[0].split(" ")[0];
+              return `Hello, ${first}`;
+            })()}
           </h1>
           <AuthButtons user={user} />
         </header>
         <section className="grid gap-3 sm:gap-4">
-          <BirthYearInput
-            user={user}
-            birthYear={birthYear}
-            setBirthYear={setBirthYear}
-          />
-          <CashBalanceInput
-            user={user}
-            cash={cashBalance}
-            setCash={setCashBalance}
-          />
-          <ContributionForm
-            amount={amount}
-            setAmount={setAmount}
-            date={date}
-            setDate={setDate}
-            type={type}
-            setType={(val: string) =>
-              setType(val as "contribution" | "withdrawal")
-            }
-            addItem={addItem}
-          />
           <Summary
             items={items}
             birthYear={birthYear}
@@ -283,7 +296,134 @@ export default function HomePage() {
             cashBalance={cashBalance}
             marketDataUnavailable={marketDataUnavailable}
           />
-          <HoldingsForm onAdd={addHolding} />
+          <Modal
+            open={openContribution}
+            onClose={() => setOpenContribution(false)}
+            title="Add record"
+          >
+            <ContributionForm
+              amount={amount}
+              setAmount={setAmount}
+              date={date}
+              setDate={setDate}
+              type={type}
+              setType={(val: string) =>
+                setType(val as "contribution" | "withdrawal")
+              }
+              addItem={(e) => {
+                addItem(e);
+                setOpenContribution(false);
+              }}
+            />
+          </Modal>
+          <Modal
+            open={openCash}
+            onClose={() => setOpenCash(false)}
+            title="Cash"
+          >
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!user) return;
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(
+                  userRef,
+                  { cash: Number(cashEdit) },
+                  { merge: true },
+                );
+                setCashBalance(Number(cashEdit));
+                setOpenCash(false);
+              }}
+              className="space-y-3"
+            >
+              <label className="block text-sm text-[var(--ws-muted)]">
+                Cash balance
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={cashEdit}
+                onChange={(e) => setCashEdit(Number(e.target.value))}
+                className="mt-1 p-2 rounded-md border w-full sm:w-48 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
+                min={0}
+              />
+              <div className="pt-1 flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setOpenCash(false)}
+                  className="px-3 py-2 rounded-md border border-[var(--ws-border)] hover:bg-[var(--ws-hover)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded-md bg-[var(--ws-accent)] text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </Modal>
+          <Modal
+            open={openHolding}
+            onClose={() => setOpenHolding(false)}
+            title="Add holding"
+          >
+            <HoldingsForm
+              onAdd={async (s, q) => {
+                await addHolding(s, q);
+                setOpenHolding(false);
+              }}
+            />
+          </Modal>
+          <Modal
+            open={openBirthYear}
+            onClose={() => setOpenBirthYear(false)}
+            title="What's your birth year?"
+          >
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!user) return;
+                const currentYear = new Date().getFullYear();
+                if (birthYear < 1900 || birthYear > currentYear) return;
+                await setDoc(
+                  doc(db, "users", user.uid),
+                  { birthYear },
+                  { merge: true },
+                );
+                setOpenBirthYear(false);
+              }}
+              className="space-y-3"
+            >
+              <label className="block text-sm text-[var(--ws-muted)]">
+                Birth year
+              </label>
+              <input
+                type="number"
+                value={birthYear}
+                onChange={(e) => setBirthYear(Number(e.target.value))}
+                className="mt-1 p-2 rounded-md border w-full sm:w-40 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
+                min={1900}
+                max={new Date().getFullYear()}
+              />
+              <div className="pt-1 flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setOpenBirthYear(false)}
+                  className="px-3 py-2 rounded-md border border-[var(--ws-border)] hover:bg-[var(--ws-hover)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded-md bg-[var(--ws-accent)] text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </Modal>
           {(() => {
             const netContributed = items.reduce(
               (sum, it) =>
@@ -301,11 +441,21 @@ export default function HomePage() {
                 onRemove={removeHolding}
                 onValueChange={setPortfolioValue}
                 onMarketStatusChange={setMarketDataUnavailable}
+                onAdd={() => setOpenHolding(true)}
+                onAddCash={() => {
+                  setCashEdit(Number(cashBalance));
+                  setOpenCash(true);
+                }}
+                onLoadingChange={setQuotesLoading}
               />
             );
           })()}
           <ContributionGraph items={items} />
-          <RecordsList items={items} removeItem={removeItem} />
+          <RecordsList
+            items={items}
+            removeItem={removeItem}
+            onAdd={() => setOpenContribution(true)}
+          />
           <ImportantNotice />
         </section>
       </div>

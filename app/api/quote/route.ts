@@ -23,7 +23,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Upstream error" }, { status: 502 });
     }
     const data = await res.json();
-    // Alpha Vantage returns a 'Note' when throttled / daily limit exceeded
     if (data?.Note || data?.Information) {
       return NextResponse.json(
         { error: "Market data service unavailable (rate limit)" },
@@ -43,7 +42,7 @@ export async function GET(request: Request) {
       price,
       previousClose: Number.isFinite(previousClose) ? previousClose : null,
     });
-  } catch (e) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch quote" },
       { status: 500 },

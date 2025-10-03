@@ -102,6 +102,9 @@ export default function Summary({
       totalContributions,
       totalWithdrawals,
       availableRoomNow,
+      contributionsUpToCurrent,
+      cumulativeLimits,
+      withdrawalsBeforeThisYear,
       thisYearWithdrawals,
       startYear,
       currentYear,
@@ -143,6 +146,65 @@ export default function Summary({
           </div>
         </div>
       </div>
+
+      {(() => {
+        const totalCapacity =
+          summary.cumulativeLimits + summary.withdrawalsBeforeThisYear;
+        const used = summary.contributionsUpToCurrent;
+        if (totalCapacity <= 0) {
+          return (
+            <div className="mb-4 p-3 rounded-md border border-[var(--ws-border)] bg-[var(--ws-muted-card)] text-sm text-[var(--ws-muted)]">
+              Your TFSA eligibility hasn’t started yet. Progress will appear
+              once you’re eligible.
+            </div>
+          );
+        }
+        const percentRaw = (used / totalCapacity) * 100;
+        const percent = Math.max(0, Math.min(100, percentRaw));
+        const overBy = Math.max(0, used - totalCapacity);
+        return (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-sm mb-1">
+              <div className="text-[var(--ws-muted)]">TFSA room used</div>
+              <div className="tabular-nums">{percent.toFixed(1)}%</div>
+            </div>
+            <div
+              className="h-2 rounded-full bg-[var(--ws-border)] overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Number(percent.toFixed(1))}
+            >
+              <div
+                className="h-full bg-[var(--ws-accent)]"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs mt-1">
+              <div className="text-[var(--ws-muted)]">
+                {formatCurrency(used)} used
+              </div>
+              <div className="text-[var(--ws-muted)]">
+                of {formatCurrency(totalCapacity)}
+              </div>
+            </div>
+            {overBy > 0 &&
+              (() => {
+                const penalty = overBy * 0.01;
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="text-[10px] text-rose-600">
+                      Over by {formatCurrency(overBy)}
+                    </div>
+                    <div className="text-[10px] text-[var(--ws-muted)]">
+                      Estimated monthly penalty: {formatCurrency(penalty)} (1%)
+                    </div>
+                  </div>
+                );
+              })()}
+          </div>
+        );
+      })()}
 
       {typeof portfolioValue === "number"
         ? (() => {

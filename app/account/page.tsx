@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../../lib/firebase";
+import { formatCurrency, formatDate } from "../../lib/format";
+import Link from "next/link";
 import {
   updateProfile,
   deleteUser,
@@ -10,18 +12,43 @@ import {
   GoogleAuthProvider,
   User,
 } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 
 export default function AccountPage() {
   const [user, loading] = useAuthState(auth);
   const [displayName, setDisplayName] = useState("");
+  const [birthYear, setBirthYear] = useState<number | "">("");
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) setDisplayName(user.displayName || "");
+    if (!user) return;
+    setDisplayName(user.displayName || "");
+    const userRef = doc(db, "users", user.uid);
+    getDoc(userRef).then((snap) => {
+      if (snap.exists()) {
+        const by = (snap.data() as { birthYear?: number } | undefined)
+          ?.birthYear;
+        if (typeof by === "number") {
+          setBirthYear(by);
+        } else {
+          setBirthYear("");
+        }
+      } else {
+        setBirthYear("");
+      }
+    });
   }, [user]);
 
   async function saveProfile() {
@@ -31,9 +58,26 @@ export default function AccountPage() {
     setSuccess(null);
     try {
       await updateProfile(user as User, { displayName: displayName || null });
+      if (birthYear !== "") {
+        const numeric = Number(birthYear);
+        const currentYear = new Date().getFullYear();
+        if (
+          Number.isFinite(numeric) &&
+          numeric >= 1900 &&
+          numeric <= currentYear
+        ) {
+          await setDoc(
+            doc(db, "users", user.uid),
+            { birthYear: numeric },
+            { merge: true },
+          );
+        } else {
+          throw new Error("Please enter a valid birth year");
+        }
+      }
       setSuccess("Profile updated");
-    } catch (e: any) {
-      setError(e?.message || "Failed to update profile");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -46,8 +90,8 @@ export default function AccountPage() {
     try {
       await reauthenticateWithPopup(user, new GoogleAuthProvider());
       await deleteUser(user);
-    } catch (e: any) {
-      setError(e?.message || "Failed to delete account");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to delete account");
     }
   }
 
@@ -96,10 +140,175 @@ export default function AccountPage() {
       a.remove();
       URL.revokeObjectURL(url);
       setSuccess("Data exported");
-    } catch (e: any) {
-      setError(e?.message || "Failed to export data");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to export data");
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!user) return;
+    setError(null);
+    setSuccess(null);
+    setExportingPdf(true);
+    try {
+      const [contribSnap, holdingSnap, userSnap] = await Promise.all([
+        getDocs(
+          query(collection(db, "contributions"), where("uid", "==", user.uid)),
+        ),
+        getDocs(
+          query(collection(db, "holdings"), where("uid", "==", user.uid)),
+        ),
+        getDoc(doc(db, "users", user.uid)),
+      ]);
+
+      type Contribution = {
+        id: string;
+        uid: string;
+        amount: number;
+        date: string;
+        type: "contribution" | "withdrawal";
+        createdAt: number;
+      };
+      const contributions: Contribution[] = contribSnap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<Contribution, "id">) }))
+        .map((it) => ({
+          ...it,
+          amount: Number(it.amount || 0),
+          date: it.date,
+          type: it.type as "contribution" | "withdrawal",
+          createdAt: Number(it.createdAt || 0),
+        }));
+      type HoldingRow = {
+        id: string;
+        uid: string;
+        symbol: string;
+        shares: number;
+        createdAt: number;
+      };
+      const holdings: HoldingRow[] = holdingSnap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<HoldingRow, "id">) }))
+        .map((h) => ({
+          ...h,
+          symbol: String(h.symbol || "").toUpperCase(),
+          shares: Number(h.shares || 0),
+        }));
+      const cash = userSnap.exists()
+        ? Number((userSnap.data() as { cash?: number } | undefined)?.cash || 0)
+        : 0;
+
+      const totalContrib = contributions
+        .filter((c) => c.type === "contribution")
+        .reduce((s, c) => s + Number(c.amount || 0), 0);
+      const totalWithdrawals = contributions
+        .filter((c) => c.type === "withdrawal")
+        .reduce((s, c) => s + Number(c.amount || 0), 0);
+      const netContributed = totalContrib - totalWithdrawals;
+
+      const recent = [...contributions]
+        .sort((a, b) => {
+          const ad = new Date(a.date).getTime();
+          const bd = new Date(b.date).getTime();
+          if (ad === bd) return Number(b.createdAt) - Number(a.createdAt);
+          return bd - ad;
+        })
+        .slice(0, 10);
+
+      const { jsPDF } = await import("jspdf");
+      const docPdf = new jsPDF();
+      const margin = 14;
+      let y = margin;
+
+      docPdf.setFontSize(16);
+      docPdf.text("Contribs Account Statement", margin, y);
+      y += 8;
+      docPdf.setFontSize(10);
+      docPdf.text(`Exported: ${new Date().toLocaleString()}`, margin, y);
+      y += 6;
+      docPdf.text(
+        `User: ${user.displayName || "Unnamed"} (${user.email || ""})`,
+        margin,
+        y,
+      );
+      y += 6;
+      if (birthYear) {
+        docPdf.text(`Birth year: ${birthYear}`, margin, y);
+        y += 6;
+      }
+
+      y += 2;
+      docPdf.setFontSize(12);
+      docPdf.text("Summary", margin, y);
+      y += 6;
+      docPdf.setFontSize(10);
+      docPdf.text(
+        `Total contributions: ${formatCurrency(totalContrib)}`,
+        margin,
+        y,
+      );
+      y += 5;
+      docPdf.text(
+        `Total withdrawals: ${formatCurrency(totalWithdrawals)}`,
+        margin,
+        y,
+      );
+      y += 5;
+      docPdf.text(
+        `Net TFSA contributed: ${formatCurrency(netContributed)}`,
+        margin,
+        y,
+      );
+      y += 5;
+      docPdf.text(`Cash balance: ${formatCurrency(cash)}`, margin, y);
+      y += 8;
+
+      docPdf.setFontSize(12);
+      docPdf.text("Holdings", margin, y);
+      y += 6;
+      docPdf.setFontSize(10);
+      if (holdings.length === 0) {
+        docPdf.text("No holdings", margin, y);
+        y += 6;
+      } else {
+        for (const h of holdings) {
+          docPdf.text(`${h.symbol} • ${h.shares} shares`, margin, y);
+          y += 5;
+          if (y > 280) {
+            docPdf.addPage();
+            y = margin;
+          }
+        }
+        y += 2;
+      }
+
+      docPdf.setFontSize(12);
+      docPdf.text("Recent transactions", margin, y);
+      y += 6;
+      docPdf.setFontSize(10);
+      if (recent.length === 0) {
+        docPdf.text("No recent transactions", margin, y);
+        y += 6;
+      } else {
+        for (const r of recent) {
+          const line = `${formatDate(r.date)} • ${r.type} • ${formatCurrency(Number(r.amount || 0))}`;
+          docPdf.text(line, margin, y);
+          y += 5;
+          if (y > 280) {
+            docPdf.addPage();
+            y = margin;
+          }
+        }
+      }
+
+      docPdf.save(
+        `contribs-statement-${new Date().toISOString().slice(0, 10)}.pdf`,
+      );
+      setSuccess("Statement exported");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to export statement");
+    } finally {
+      setExportingPdf(false);
     }
   }
 
@@ -124,12 +333,12 @@ export default function AccountPage() {
       <div className="max-w-2xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-semibold">Account</h1>
-          <a
+          <Link
             href="/"
             className="text-sm text-[var(--ws-muted)] hover:underline"
           >
             Back to app
-          </a>
+          </Link>
         </header>
 
         <section className="p-4 bg-[var(--ws-card)] rounded-lg border border-[var(--ws-border)]">
@@ -137,7 +346,7 @@ export default function AccountPage() {
           <div className="text-sm text-[var(--ws-muted)] mb-3">
             Manage your Google-linked profile details.
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <label className="block text-sm text-[var(--ws-muted)]">
                 Display name
@@ -156,6 +365,22 @@ export default function AccountPage() {
                 className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-muted-card)] border-[var(--ws-border)] text-[var(--ws-text)] opacity-80 outline-none focus:outline-none focus:ring-0 cursor-not-allowed select-none"
                 value={user.email || ""}
                 readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[var(--ws-muted)]">
+                Birth year
+              </label>
+              <input
+                type="number"
+                min={1900}
+                max={new Date().getFullYear()}
+                className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
+                value={birthYear}
+                onChange={(e) =>
+                  setBirthYear(e.target.value ? Number(e.target.value) : "")
+                }
+                placeholder="YYYY"
               />
             </div>
           </div>
@@ -183,13 +408,22 @@ export default function AccountPage() {
           <p className="text-sm text-[var(--ws-muted)] mb-3">
             Download a copy of your data (contributions and holdings) as JSON.
           </p>
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="px-4 py-2 rounded-md border border-[var(--ws-border)] hover:bg-[var(--ws-hover)] transition cursor-pointer disabled:opacity-50"
-          >
-            {downloading ? "Preparing…" : "Download my data"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="px-4 py-2 rounded-md border border-[var(--ws-border)] hover:bg-[var(--ws-hover)] transition cursor-pointer disabled:opacity-50"
+            >
+              {downloading ? "Preparing…" : "Download my data"}
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="px-4 py-2 rounded-md border border-[var(--ws-border)] hover:bg-[var(--ws-hover)] transition cursor-pointer disabled:opacity-50"
+            >
+              {exportingPdf ? "Building…" : "Export statement (PDF)"}
+            </button>
+          </div>
         </section>
 
         <section className="p-4 bg-[var(--ws-card)] rounded-lg border border-[var(--ws-border)]">
