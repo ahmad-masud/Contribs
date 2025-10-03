@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent } from "react";
+import { getCurrentCurrencyCode } from "../lib/format";
+import { useCurrency } from "./CurrencyProvider";
 
 export default function ContributionForm({
   amount,
@@ -19,13 +21,16 @@ export default function ContributionForm({
   setType: (val: string) => void;
   addItem: (e: FormEvent) => void;
 }) {
+  useCurrency();
   return (
     <form
       onSubmit={addItem}
       className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end"
     >
       <div>
-        <label className="block text-sm text-[var(--ws-muted)]">Amount</label>
+        <label className="block text-sm text-[var(--ws-muted)]">
+          Amount ({getCurrentCurrencyCode()})
+        </label>
         <input
           type="number"
           value={amount}

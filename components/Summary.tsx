@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { formatCurrency } from "../lib/format";
+import { useCurrencyFormatter } from "../lib/useCurrencyFormatter";
 
 const ANNUAL_LIMITS: Record<number, number> = {
   2009: 5000,
@@ -53,6 +54,7 @@ export default function Summary({
   cashBalance,
   marketDataUnavailable,
 }: SummaryProps) {
+  useCurrencyFormatter();
   const summary = useMemo(() => {
     const startYear = Math.max(2009, birthYear + 18);
     const currentYear = new Date().getFullYear();

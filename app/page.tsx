@@ -29,6 +29,14 @@ import Loading from "../components/Loading";
 import { useToast } from "../components/ToastProvider";
 import HoldingsForm from "../components/HoldingsForm";
 import HoldingsList, { type Holding } from "../components/HoldingsList";
+import CurrencySelector from "../components/CurrencySelector";
+import {
+  convertPreferredToBase,
+  formatCurrency,
+  getCurrentCurrencyCode,
+  convertBaseToPreferred,
+} from "../lib/format";
+import { useCurrency } from "../components/CurrencyProvider";
 import Modal from "../components/Modal";
 
 interface ContributionItem {
@@ -41,6 +49,7 @@ interface ContributionItem {
 }
 
 export default function HomePage() {
+  const { preferred, rate } = useCurrency();
   const { toast } = useToast();
   const [user, authLoading] = useAuthState(auth);
   const [items, setItems] = useState<ContributionItem[]>([]);
@@ -63,21 +72,27 @@ export default function HomePage() {
   const [quotesLoading, setQuotesLoading] = useState(false);
 
   useEffect(() => {
+    setAmount((prev) => Number(prev));
+    setCashEdit(convertBaseToPreferred(cashBalance));
+  }, [preferred, rate, cashBalance]);
+  useEffect(() => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
     getDoc(userRef).then((snap) => {
       const by = snap.exists()
-        ? (snap.data() as { birthYear?: number } | undefined)?.birthYear
+        ? (snap.data() as { birthYear?: number; currency?: string } | undefined)
+            ?.birthYear
         : undefined;
       if (typeof by === "number") {
         setBirthYear(by);
       } else {
         setOpenBirthYear(true);
       }
-      const cash = snap.exists()
+      const cashBase = snap.exists()
         ? Number((snap.data() as { cash?: number } | undefined)?.cash ?? 0)
         : 0;
-      setCashBalance(Number.isFinite(cash) ? cash : 0);
+      setCashBalance(Number.isFinite(cashBase) ? cashBase : 0);
+      setCashEdit(Number.isFinite(cashBase) ? cashBase : 0);
     });
     const q = query(
       collection(db, "contributions"),
@@ -146,7 +161,7 @@ export default function HomePage() {
     try {
       await addDoc(collection(db, "contributions"), {
         uid: user.uid,
-        amount: Number(amount),
+        amount: Number(convertPreferredToBase(Number(amount))),
         date,
         type,
         createdAt: Date.now(),
@@ -264,7 +279,8 @@ export default function HomePage() {
             <div>
               <h1 className="text-xl font-semibold tracking-tight">Contribs</h1>
               <p className="mt-1 text-sm text-[var(--ws-muted)]">
-                Track TFSA contributions, holdings, and cash in one simple place.
+                Track TFSA contributions, holdings, and cash in one simple
+                place.
               </p>
             </div>
             <div className="w-full pt-2">
@@ -305,7 +321,10 @@ export default function HomePage() {
               return `Hello, ${first}`;
             })()}
           </h1>
-          <AuthButtons user={user} />
+          <div className="flex items-center gap-3">
+            <CurrencySelector />
+            <AuthButtons user={user} />
+          </div>
         </header>
         <section className="grid gap-3 sm:gap-4">
           <Summary
@@ -346,12 +365,13 @@ export default function HomePage() {
                 e.preventDefault();
                 if (!user) return;
                 const userRef = doc(db, "users", user.uid);
+                const baseValue = convertPreferredToBase(Number(cashEdit));
                 await setDoc(
                   userRef,
-                  { cash: Number(cashEdit) },
+                  { cash: Number(baseValue) },
                   { merge: true },
                 );
-                setCashBalance(Number(cashEdit));
+                setCashBalance(Number(baseValue));
                 setOpenCash(false);
               }}
               className="space-y-3"
@@ -367,6 +387,11 @@ export default function HomePage() {
                 className="mt-1 p-2 rounded-md border w-full sm:w-48 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
                 min={0}
               />
+              <div className="text-xs text-[var(--ws-muted)]">
+                Stored in CAD. Current:{" "}
+                {formatCurrency(convertPreferredToBase(Number(cashEdit)))} (
+                {getCurrentCurrencyCode()}).
+              </div>
               <div className="pt-1 flex gap-2 justify-end">
                 <button
                   type="button"

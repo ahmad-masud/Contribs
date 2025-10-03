@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, getCurrentCurrencyCode } from "../lib/format";
+import { useCurrencyFormatter } from "../lib/useCurrencyFormatter";
 
 export interface Holding {
   id: string;
@@ -32,6 +33,7 @@ export default function HoldingsList({
   onAddCash?: () => void;
   onLoadingChange?: (loading: boolean) => void;
 }) {
+  useCurrencyFormatter();
   const [quotes, setQuotes] = useState<Record<string, number>>({});
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -50,18 +52,18 @@ export default function HoldingsList({
       onLoadingChange?.(true);
       const unique = Array.from(new Set(items.map((i) => i.symbol)));
       let unavailable = false;
+      const target = getCurrentCurrencyCode();
       const entries = await Promise.all(
         unique.map(async (sym) => {
           try {
             const res = await fetch(
-              `/api/quote?symbol=${encodeURIComponent(sym)}`,
+              `/api/quote?symbol=${encodeURIComponent(sym)}&target=${encodeURIComponent(target)}`,
             );
-            if (res.status === 503) {
-              unavailable = true;
-            }
+            if (res.status === 503) unavailable = true;
             const data = await res.json();
-            const price = Number(data?.price);
-            return [sym, isFinite(price) ? price : 0] as const;
+            const cadPrice = Number(data?.cad?.price);
+            if (!isFinite(cadPrice) || cadPrice <= 0) return [sym, 0] as const;
+            return [sym, cadPrice] as const;
           } catch {
             return [sym, 0] as const;
           }
@@ -172,7 +174,9 @@ export default function HoldingsList({
               key={r.id}
               className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4 sm:justify-between text-sm"
             >
-              <div className="font-medium truncate max-w-[40vw] sm:max-w-none">{r.symbol}</div>
+              <div className="font-medium truncate max-w-[40vw] sm:max-w-none">
+                {r.symbol}
+              </div>
               <div className="text-[var(--ws-muted)] order-3 sm:order-none">
                 {r.shares} shares
               </div>

@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { User } from "firebase/auth";
-import { formatCurrency } from "../lib/format";
+import {
+  formatCurrency,
+  convertPreferredToBase,
+  getCurrentCurrencyCode,
+} from "../lib/format";
+import { useCurrencyFormatter } from "../lib/useCurrencyFormatter";
 
 export default function CashBalanceInput({
   user,
@@ -15,6 +20,7 @@ export default function CashBalanceInput({
   cash: number;
   setCash: (val: number) => void;
 }) {
+  useCurrencyFormatter();
   const [loaded, setLoaded] = useState(false);
   const prevRef = useRef<number | null>(null);
 
@@ -22,16 +28,14 @@ export default function CashBalanceInput({
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
     let mounted = true;
-
     getDoc(userRef)
       .then((snapshot) => {
         if (!mounted) return;
-        const v = snapshot.exists() ? Number(snapshot.data()?.cash ?? 0) : 0;
-        prevRef.current = v;
-        setCash(Number.isFinite(v) ? v : 0);
+        const base = snapshot.exists() ? Number(snapshot.data()?.cash ?? 0) : 0;
+        prevRef.current = base;
+        setCash(Number.isFinite(base) ? base : 0);
       })
       .finally(() => mounted && setLoaded(true));
-
     return () => {
       mounted = false;
     };
@@ -42,7 +46,11 @@ export default function CashBalanceInput({
     if (prevRef.current === cash) return;
 
     const userRef = doc(db, "users", user.uid);
-    setDoc(userRef, { cash }, { merge: true }).then(() => {
+    setDoc(
+      userRef,
+      { cash: convertPreferredToBase(cash) },
+      { merge: true },
+    ).then(() => {
       prevRef.current = cash;
     });
   }, [cash, loaded, user]);
@@ -50,7 +58,7 @@ export default function CashBalanceInput({
   return (
     <div className="p-4 bg-[var(--ws-card)] border border-[var(--ws-border)] rounded-lg">
       <label className="block text-sm text-[var(--ws-muted)]">
-        Cash balance
+        Cash balance (stored CAD, shown {getCurrentCurrencyCode()})
       </label>
       <div className="mt-1 flex items-center gap-2">
         <input
