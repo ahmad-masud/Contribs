@@ -62,7 +62,7 @@ export default function HomePage() {
   const [type, setType] = useState<"contribution" | "withdrawal">(
     "contribution",
   );
-  const [birthYear, setBirthYear] = useState(1990);
+  const [birthDate, setBirthDate] = useState("");
   const [cashBalance, setCashBalance] = useState(0);
   const [marketDataUnavailable, setMarketDataUnavailable] = useState(false);
   const [openContribution, setOpenContribution] = useState(false);
@@ -80,12 +80,12 @@ export default function HomePage() {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
     getDoc(userRef).then((snap) => {
-      const by = snap.exists()
-        ? (snap.data() as { birthYear?: number; currency?: string } | undefined)
-            ?.birthYear
+      const bd = snap.exists()
+        ? (snap.data() as { birthDate?: string; currency?: string } | undefined)
+            ?.birthDate
         : undefined;
-      if (typeof by === "number") {
-        setBirthYear(by);
+      if (typeof bd === "string" && bd.length >= 8) {
+        setBirthDate(bd);
       } else {
         setOpenBirthYear(true);
       }
@@ -156,9 +156,25 @@ export default function HomePage() {
     return () => unsub();
   }, [user]);
 
+  function get18thBirthday(birthDate: string) {
+    if (!birthDate || isNaN(new Date(birthDate).getTime())) return null;
+    const d = new Date(birthDate);
+    d.setFullYear(d.getFullYear() + 18);
+    return d;
+  }
+
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+    const minDate = get18thBirthday(birthDate);
+    if (minDate && new Date(date) < minDate) {
+      toast({
+        variant: "error",
+        title: "Too young",
+        description: "You can't contribute before you turn 18.",
+      });
+      return;
+    }
     try {
       await addDoc(collection(db, "contributions"), {
         uid: user.uid,
@@ -349,7 +365,7 @@ export default function HomePage() {
         <section className="grid gap-3 sm:gap-4">
           <Summary
             items={items}
-            birthYear={birthYear}
+            birthDate={birthDate}
             portfolioValue={portfolioValue + cashBalance}
             hasHoldings={holdings.length > 0}
             cashBalance={cashBalance}
@@ -444,17 +460,16 @@ export default function HomePage() {
           <Modal
             open={openBirthYear}
             onClose={() => setOpenBirthYear(false)}
-            title="What's your birth year?"
+            title="What's your birth date?"
           >
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!user) return;
-                const currentYear = new Date().getFullYear();
-                if (birthYear < 1900 || birthYear > currentYear) return;
+                if (!birthDate || isNaN(new Date(birthDate).getTime())) return;
                 await setDoc(
                   doc(db, "users", user.uid),
-                  { birthYear },
+                  { birthDate },
                   { merge: true },
                 );
                 setOpenBirthYear(false);
@@ -462,15 +477,14 @@ export default function HomePage() {
               className="space-y-3"
             >
               <label className="block text-sm text-[var(--ws-muted)]">
-                Birth year
+                Birth date
               </label>
               <input
-                type="number"
-                value={birthYear}
-                onChange={(e) => setBirthYear(Number(e.target.value))}
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
                 className="mt-1 p-2 rounded-md border w-full sm:w-40 bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
-                min={1900}
-                max={new Date().getFullYear()}
+                max={new Date().toISOString().slice(0, 10)}
               />
               <div className="pt-1 flex gap-2 justify-end">
                 <button

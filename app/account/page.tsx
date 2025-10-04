@@ -25,7 +25,7 @@ import {
 export default function AccountPage() {
   const [user, loading] = useAuthState(auth);
   const [displayName, setDisplayName] = useState("");
-  const [birthYear, setBirthYear] = useState<number | "">("");
+  const [birthDate, setBirthDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -38,15 +38,15 @@ export default function AccountPage() {
     const userRef = doc(db, "users", user.uid);
     getDoc(userRef).then((snap) => {
       if (snap.exists()) {
-        const by = (snap.data() as { birthYear?: number } | undefined)
-          ?.birthYear;
-        if (typeof by === "number") {
-          setBirthYear(by);
+        const bd = (snap.data() as { birthDate?: string } | undefined)
+          ?.birthDate;
+        if (typeof bd === "string" && bd.length >= 8) {
+          setBirthDate(bd);
         } else {
-          setBirthYear("");
+          setBirthDate("");
         }
       } else {
-        setBirthYear("");
+        setBirthDate("");
       }
     });
   }, [user]);
@@ -58,21 +58,15 @@ export default function AccountPage() {
     setSuccess(null);
     try {
       await updateProfile(user as User, { displayName: displayName || null });
-      if (birthYear !== "") {
-        const numeric = Number(birthYear);
-        const currentYear = new Date().getFullYear();
-        if (
-          Number.isFinite(numeric) &&
-          numeric >= 1900 &&
-          numeric <= currentYear
-        ) {
+      if (birthDate !== "") {
+        if (!isNaN(new Date(birthDate).getTime())) {
           await setDoc(
             doc(db, "users", user.uid),
-            { birthYear: numeric },
+            { birthDate },
             { merge: true },
           );
         } else {
-          throw new Error("Please enter a valid birth year");
+          throw new Error("Please enter a valid birth date");
         }
       }
       setSuccess("Profile updated");
@@ -232,8 +226,8 @@ export default function AccountPage() {
         y,
       );
       y += 6;
-      if (birthYear) {
-        docPdf.text(`Birth year: ${birthYear}`, margin, y);
+      if (birthDate) {
+        docPdf.text(`Birth date: ${birthDate}`, margin, y);
         y += 6;
       }
 
@@ -369,18 +363,14 @@ export default function AccountPage() {
             </div>
             <div>
               <label className="block text-sm text-[var(--ws-muted)]">
-                Birth year
+                Birth date
               </label>
               <input
-                type="number"
-                min={1900}
-                max={new Date().getFullYear()}
+                type="date"
                 className="mt-1 p-2 rounded-md border w-full bg-[var(--ws-card)] border-[var(--ws-border)] text-[var(--ws-text)] outline-none focus:outline-none focus:ring-0"
-                value={birthYear}
-                onChange={(e) =>
-                  setBirthYear(e.target.value ? Number(e.target.value) : "")
-                }
-                placeholder="YYYY"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
               />
             </div>
           </div>

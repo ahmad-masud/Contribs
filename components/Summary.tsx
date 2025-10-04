@@ -37,7 +37,7 @@ interface Item {
 
 interface SummaryProps {
   items: Item[];
-  birthYear: number;
+  birthDate: string;
   allTimeProfit?: number;
   portfolioValue?: number;
   hasHoldings?: boolean;
@@ -47,7 +47,7 @@ interface SummaryProps {
 
 export default function Summary({
   items,
-  birthYear,
+  birthDate,
   allTimeProfit,
   portfolioValue,
   hasHoldings,
@@ -56,6 +56,10 @@ export default function Summary({
 }: SummaryProps) {
   useCurrencyFormatter();
   const summary = useMemo(() => {
+    let birthYear = 1990;
+    if (birthDate && !isNaN(new Date(birthDate).getTime())) {
+      birthYear = new Date(birthDate).getFullYear();
+    }
     const startYear = Math.max(2009, birthYear + 18);
     const currentYear = new Date().getFullYear();
 
@@ -111,7 +115,7 @@ export default function Summary({
       startYear,
       currentYear,
     };
-  }, [items, birthYear]);
+  }, [items, birthDate]);
 
   const contributedYears = Object.keys(summary.byYear)
     .map(Number)
@@ -325,21 +329,28 @@ export default function Summary({
 
       <div>
         <h3 className="font-medium text-md mb-2">Contributions by Year</h3>
-        <div className="space-y-1">
-          {contributedYears.length === 0 && (
-            <div className="text-[var(--ws-muted)] text-sm">
+        <div className="rounded-lg bg-[var(--ws-card)]">
+          {contributedYears.length === 0 ? (
+            <div className="text-[var(--ws-muted)] text-sm text-center py-4">
               No contributions yet
             </div>
-          )}
-          {contributedYears.map((year) => (
-            <div
-              key={year}
-              className="flex justify-between text-[var(--ws-text)]"
-            >
-              <span>{year}</span>
-              <span>{formatCurrency(summary.byYear[year].contributions)}</span>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1">
+              {contributedYears.map((year) => (
+                <div
+                  key={year}
+                  className="flex flex-col items-start sm:items-center bg-[var(--ws-muted-card)] rounded px-1 py-0.5"
+                >
+                  <span className="text-[10px] text-[var(--ws-muted)] font-medium mb-0.5 tracking-wide uppercase">
+                    {year}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-[var(--ws-text)] leading-tight">
+                    {formatCurrency(summary.byYear[year].contributions)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
